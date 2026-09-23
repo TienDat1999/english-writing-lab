@@ -1,0 +1,10 @@
+{
+  "name": "@draftwise/auth",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./admin-password": "./src/admin-password.ts"
+  }
+}

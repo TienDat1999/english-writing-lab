@@ -116,6 +116,7 @@ export function QuickQuizImport({
               <SelectContent>
                 <SelectItem value="PARAPHRASE">Paraphrase</SelectItem>
                 <SelectItem value="SYNONYM">Cặp Synonym</SelectItem>
+                <SelectItem value="TEMPLATE">Writing Template</SelectItem>
               </SelectContent>
             </Select>
           </div>

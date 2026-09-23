@@ -1,10 +1,23 @@
 import { ZodError } from "zod";
 
 import { UnauthorizedError } from "@/server/auth/session";
+import {
+  AuthorizationConflictError,
+  AuthorizationTargetNotFoundError,
+  ForbiddenError,
+} from "@/server/auth/authorization.errors";
 
 export function errorResponse(error: unknown): Response {
   if (error instanceof UnauthorizedError) {
     return Response.json({ error: "UNAUTHORIZED" }, { status: 401 });
+  }
+
+  if (error instanceof ForbiddenError) {
+    return Response.json({ error: "FORBIDDEN" }, { status: 403 });
+  }
+
+  if (error instanceof AuthorizationConflictError) {
+    return Response.json({ error: "CONFLICT", message: error.message }, { status: 409 });
   }
 
   if (error instanceof ZodError) {
@@ -14,7 +27,14 @@ export function errorResponse(error: unknown): Response {
     );
   }
 
-  if (error instanceof ResourceNotFoundError) {
+  if (error instanceof InvalidRequestError) {
+    return Response.json({ error: "INVALID_REQUEST", message: error.message }, { status: 400 });
+  }
+
+  if (
+    error instanceof ResourceNotFoundError
+    || error instanceof AuthorizationTargetNotFoundError
+  ) {
     return Response.json({ error: "NOT_FOUND" }, { status: 404 });
   }
 
@@ -26,5 +46,12 @@ export class ResourceNotFoundError extends Error {
   constructor() {
     super("Resource not found");
     this.name = "ResourceNotFoundError";
+  }
+}
+
+export class InvalidRequestError extends Error {
+  constructor(message = "Invalid request") {
+    super(message);
+    this.name = "InvalidRequestError";
   }
 }

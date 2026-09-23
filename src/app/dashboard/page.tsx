@@ -1,37 +1,43 @@
+import {
+  AlertCircleIcon,
+  ArrowRight01Icon,
+  BookOpen01Icon,
+  CheckmarkBadge01Icon,
+  Clock01Icon,
+  Edit02Icon,
+  RepeatIcon,
+  SparklesIcon,
+  Target01Icon,
+} from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
-import { auth, signOut } from "@/auth";
-import { AppBrand } from "@/components/app-brand";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { auth } from "@/auth";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Card,
-  CardAction,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
-import { getLearningStats } from "@/server/learning/learning.service";
-import { listSubmissions } from "@/server/submissions/submission.service";
+import { getDashboardOverview } from "@/server/dashboard/dashboard.service";
 
 const statusStyles = {
-  DRAFT: "border-border bg-muted text-muted-foreground",
-  QUEUED: "border-amber-300 bg-amber-50 text-amber-800",
-  ANALYZING: "border-blue-300 bg-blue-50 text-blue-800",
-  COMPLETED: "border-emerald-300 bg-emerald-50 text-emerald-800",
-  FAILED: "border-red-300 bg-red-50 text-red-800",
+  DRAFT: "border-slate-200 bg-slate-100 text-slate-700",
+  QUEUED: "border-amber-200 bg-amber-50 text-amber-800",
+  ANALYZING: "border-sky-200 bg-sky-50 text-sky-800",
+  COMPLETED: "border-emerald-200 bg-emerald-50 text-emerald-800",
+  FAILED: "border-rose-200 bg-rose-50 text-rose-800",
 } as const;
 
 const statusLabels = {
-  DRAFT: "Draft",
-  QUEUED: "Queued",
-  ANALYZING: "Analyzing",
-  COMPLETED: "Completed",
-  FAILED: "Needs retry",
+  DRAFT: "Bản nháp",
+  QUEUED: "Đang chờ",
+  ANALYZING: "Đang chấm",
+  COMPLETED: "Đã phân tích",
+  FAILED: "Lỗi",
 } as const;
 
 type DashboardPageProps = {
@@ -45,192 +51,352 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
     redirect("/login");
   }
 
-  const [submissions, learningStats, query] = await Promise.all([
-    listSubmissions(session.user.id),
-    getLearningStats(session.user.id),
+  const [overview, query] = await Promise.all([
+    getDashboardOverview(session.user.id),
     searchParams,
   ]);
+
   const justSubmitted = typeof query.submitted === "string";
-  const completedCount = submissions.filter(
-    (submission) => submission.status === "COMPLETED",
-  ).length;
-  const initials = session.user.name
-    ?.split(" ")
-    .slice(0, 2)
-    .map((part) => part[0])
-    .join("")
-    .toUpperCase();
+  const { primaryAction, submissions } = overview;
+  const completedSubmissions = submissions.filter((s) => s.status === "COMPLETED");
 
   return (
-    <main className="min-h-screen bg-background text-foreground">
-      <header className="sticky top-0 z-30 border-b border-blue-100 bg-white/90 backdrop-blur-xl">
-        <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-5 sm:px-8">
-          <AppBrand />
-          <div className="flex items-center gap-3">
-            <Avatar>
-              <AvatarImage alt="" src={session.user.image ?? undefined} />
-              <AvatarFallback>{initials || "W"}</AvatarFallback>
-            </Avatar>
-            <form
-              action={async () => {
-                "use server";
-                await signOut({ redirectTo: "/" });
-              }}
-            >
-              <Button type="submit" variant="ghost">
-                Sign out
-              </Button>
-            </form>
+    <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8 space-y-4">
+      {/* Thông báo nộp bài thành công */}
+      {justSubmitted ? (
+        <div className="flex items-center justify-between gap-3 rounded-xl border border-emerald-200 bg-emerald-50/90 px-3.5 py-2.5 text-emerald-950 text-xs sm:text-sm shadow-xs">
+          <div className="flex items-center gap-2">
+            <HugeiconsIcon icon={CheckmarkBadge01Icon} size={16} className="text-emerald-600 shrink-0" />
+            <span className="font-semibold text-emerald-900">
+              Bài viết đã nộp thành công! AI đang tiến hành phân tích toàn diện.
+            </span>
           </div>
+          <Badge className="border-emerald-300 bg-white text-emerald-800 shrink-0 text-[10px]" variant="outline">
+            Đang xử lý
+          </Badge>
         </div>
-      </header>
+      ) : null}
 
-      <div className="mx-auto max-w-7xl px-5 py-12 sm:px-8 lg:py-16">
-        {justSubmitted ? (
-          <div className="mb-8 flex flex-col justify-between gap-3 rounded-2xl border border-emerald-300 bg-emerald-50 px-5 py-4 text-emerald-900 sm:flex-row sm:items-center">
-            <div>
-              <p className="font-semibold">Essay submitted successfully.</p>
-              <p className="mt-1 text-sm text-emerald-800">
-                It is safely stored and waiting in the analysis queue.
-              </p>
+      {/* 1. Top Action Hero Banner (Sapphire Navy Theme - Điểm nhấn màu sắc sang trọng) */}
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-slate-900 via-sky-950 to-slate-900 p-4 sm:p-5 text-white shadow-md border border-slate-800/80">
+        <div className="absolute -right-16 -top-16 size-48 rounded-full bg-sky-500/10 blur-3xl pointer-events-none" />
+        <div className="relative z-10 flex flex-col gap-3.5 lg:flex-row lg:items-center lg:justify-between">
+          <div className="space-y-1 max-w-2xl">
+            <div className="flex items-center gap-2">
+              <span className="inline-flex items-center rounded-md bg-sky-400/20 px-2 py-0.5 font-mono text-[11px] font-bold text-sky-200 border border-sky-400/30">
+                {primaryAction.badge}
+              </span>
+              <span className="text-[11px] font-medium text-sky-200/80">Hôm nay nên làm gì?</span>
             </div>
-            <Badge className="border-emerald-300 bg-white/60 text-emerald-800" variant="outline">
-              Queued
-            </Badge>
-          </div>
-        ) : null}
-
-        <section className="prep-hero prep-grid relative overflow-hidden rounded-[2.25rem] px-7 py-10 text-white shadow-[0_24px_60px_rgb(20_84_205/22%)] sm:px-10 lg:flex lg:items-end lg:justify-between lg:gap-8 lg:px-12 lg:py-12">
-          <div className="absolute -right-16 -top-20 size-64 rounded-full border-[50px] border-white/8" />
-          <div>
-            <Badge className="mb-5 border-white/20 bg-white/12 text-white" variant="outline">
-              Writing workspace
-            </Badge>
-            <h1 className="max-w-3xl font-heading text-4xl font-extrabold leading-tight tracking-tight sm:text-5xl lg:text-6xl">
-              Welcome back, {session.user.name?.split(" ")[0] ?? "Writer"}.
+            <h1 className="font-heading text-lg font-bold tracking-tight text-white sm:text-xl">
+              {primaryAction.title}
             </h1>
-            <p className="mt-4 max-w-xl text-lg leading-8 text-blue-100">
-              Write, understand the pattern, and carry the improvement into your next essay.
+            <p className="text-xs text-slate-300 leading-relaxed line-clamp-2">
+              {primaryAction.description}
             </p>
           </div>
-          <div className="relative z-10 mt-8 flex flex-wrap gap-3 lg:mt-0 lg:justify-end">
-            <Button asChild className="h-12 bg-white px-6 font-bold text-primary hover:bg-blue-50" size="lg" variant="outline">
-              <Link href="/dashboard/new">Write a new essay →</Link>
+
+          <div className="flex flex-wrap items-center gap-2 shrink-0 pt-0.5 lg:pt-0">
+            <Button asChild size="sm" className="h-9 bg-sky-500 hover:bg-sky-400 text-white font-bold shadow-md shadow-sky-500/20 text-xs px-4">
+              <Link href={primaryAction.ctaHref} className="inline-flex items-center gap-1.5">
+                <span>{primaryAction.ctaLabel}</span>
+                <HugeiconsIcon icon={ArrowRight01Icon} size={15} />
+              </Link>
             </Button>
-            <Button asChild className="h-12 border-white/25 bg-white/10 px-6 text-white shadow-none hover:bg-white/20 hover:text-white" size="lg" variant="outline">
-              <Link href="/dashboard/learning">Learning library</Link>
+            <Button asChild variant="outline" size="sm" className="h-9 bg-white/10 hover:bg-white/15 text-white border-white/20 font-semibold text-xs px-3 backdrop-blur-xs">
+              <Link href="/dashboard/new" className="inline-flex items-center gap-1.5">
+                <HugeiconsIcon icon={Edit02Icon} size={14} />
+                <span>Viết bài mới</span>
+              </Link>
             </Button>
-            <Button asChild className="h-12 border-amber-300/60 bg-amber-300 px-6 font-bold text-blue-950 hover:bg-amber-200" size="lg" variant="outline">
-              <Link href="/dashboard/review?mode=quick">Quick Quiz · {learningStats.quick}</Link>
+            <Button asChild variant="ghost" size="sm" className="h-9 text-sky-200 hover:text-white hover:bg-white/10 text-xs px-2.5">
+              <Link href="/dashboard/learning" className="inline-flex items-center gap-1">
+                <HugeiconsIcon icon={BookOpen01Icon} size={14} />
+                <span>Thư viện</span>
+              </Link>
             </Button>
           </div>
-        </section>
+        </div>
+      </div>
 
-        <Separator className="my-10" />
-
-        <section className="grid gap-5 md:grid-cols-3">
-          <Card className="border-t-4 border-t-primary">
-            <CardHeader>
-              <CardDescription>Essays submitted</CardDescription>
-              <CardTitle className="font-heading text-4xl">{submissions.length}</CardTitle>
-              <CardAction>
-                <Badge variant="outline">Latest 30</Badge>
-              </CardAction>
-            </CardHeader>
-          </Card>
-          <Card className="border-t-4 border-t-emerald-400">
-            <CardHeader>
-              <CardDescription>Analyses completed</CardDescription>
-              <CardTitle className="font-heading text-4xl">{completedCount}</CardTitle>
-              <CardAction>
-                <Badge variant="outline">All time</Badge>
-              </CardAction>
-            </CardHeader>
-          </Card>
-          <Card className="border-t-4 border-t-amber-400">
-            <CardHeader>
-              <CardDescription>Learning items due</CardDescription>
-              <CardTitle className="font-heading text-4xl">{learningStats.due}</CardTitle>
-              <CardAction>
-                <Button asChild className="rounded-full" size="sm" variant="outline">
-                  <Link href="/dashboard/review">Review now</Link>
-                </Button>
-              </CardAction>
-            </CardHeader>
-          </Card>
-        </section>
-
-        <section className="mt-12">
-          <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
-            <div>
-              <Badge variant="outline">Submission history</Badge>
-              <h2 className="mt-4 font-heading text-4xl tracking-tight">Your recent writing</h2>
+      {/* 2. Dãy 4 Chỉ số KPI Tinh gọn (Tinted Color Accent Cards - Chấm dứt màu trắng đơn điệu) */}
+      <div id="progress" className="scroll-mt-16 grid grid-cols-2 gap-2.5 sm:gap-3.5 lg:grid-cols-4">
+        {/* KPI 1: Band điểm (Sky Palette) */}
+        <div className="rounded-xl border border-sky-100 bg-gradient-to-br from-sky-50/80 via-white to-sky-50/30 p-3 sm:p-3.5 shadow-2xs hover:border-sky-300 transition-colors">
+          <div className="flex items-center justify-between text-sky-800">
+            <span className="text-[11px] font-semibold">Band gần nhất</span>
+            <div className="grid size-6 place-items-center rounded-md bg-sky-100 text-sky-600">
+              <HugeiconsIcon icon={Target01Icon} size={14} />
             </div>
-            {submissions.length > 0 ? (
-              <p className="text-sm text-muted-foreground">Newest submission first</p>
-            ) : null}
           </div>
+          <div className="mt-1.5 flex items-baseline justify-between">
+            <span className="font-heading font-mono text-2xl font-bold text-sky-700">
+              {overview.latestBand !== null ? overview.latestBand.toFixed(1) : "—"}
+            </span>
+            <span className="rounded-md bg-sky-100/90 px-1.5 py-0.5 text-[10px] font-medium text-sky-800">
+              {overview.latestBand !== null ? "Bài mới nhất" : "Chưa có"}
+            </span>
+          </div>
+        </div>
 
-          {submissions.length === 0 ? (
-            <Card className="border-dashed bg-card/60 py-12">
-              <CardContent className="mx-auto flex max-w-xl flex-col items-center text-center">
-                <div className="mb-6 grid size-14 place-items-center rounded-2xl bg-secondary font-heading text-2xl">
-                  01
+        {/* KPI 2: Cần ôn hôm nay (Warm Amber Palette) */}
+        <div className="rounded-xl border border-amber-100 bg-gradient-to-br from-amber-50/80 via-white to-amber-50/30 p-3 sm:p-3.5 shadow-2xs hover:border-amber-300 transition-colors">
+          <div className="flex items-center justify-between text-amber-800">
+            <span className="text-[11px] font-semibold">Cần ôn hôm nay</span>
+            <div className="grid size-6 place-items-center rounded-md bg-amber-100 text-amber-600">
+              <HugeiconsIcon icon={Clock01Icon} size={14} />
+            </div>
+          </div>
+          <div className="mt-1.5 flex items-baseline justify-between">
+            <span className="font-heading font-mono text-2xl font-bold text-amber-700">
+              {overview.learningStats.due}
+            </span>
+            {overview.learningStats.due > 0 ? (
+              <Link
+                href="/dashboard/review"
+                className="rounded-md bg-amber-200/80 px-2 py-0.5 text-[10px] font-bold text-amber-900 hover:bg-amber-300/80 transition-colors"
+              >
+                Ôn ngay →
+              </Link>
+            ) : (
+              <span className="rounded-md bg-amber-100/90 px-1.5 py-0.5 text-[10px] font-medium text-amber-800">
+                Đã xong
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* KPI 3: Thành thạo (Emerald Palette) */}
+        <div className="rounded-xl border border-emerald-100 bg-gradient-to-br from-emerald-50/80 via-white to-emerald-50/30 p-3 sm:p-3.5 shadow-2xs hover:border-emerald-300 transition-colors">
+          <div className="flex items-center justify-between text-emerald-800">
+            <span className="text-[11px] font-semibold">Đã thành thạo</span>
+            <div className="grid size-6 place-items-center rounded-md bg-emerald-100 text-emerald-600">
+              <HugeiconsIcon icon={SparklesIcon} size={14} />
+            </div>
+          </div>
+          <div className="mt-1.5 flex items-baseline justify-between">
+            <div className="flex items-baseline gap-1">
+              <span className="font-heading font-mono text-2xl font-bold text-emerald-700">
+                {overview.learningStats.mastered}
+              </span>
+              <span className="text-[11px] text-emerald-600/80 font-mono">
+                /{overview.learningStats.total}
+              </span>
+            </div>
+            <span className="rounded-md bg-emerald-100/90 px-1.5 py-0.5 text-[10px] font-bold text-emerald-800">
+              {overview.masteryRate}%
+            </span>
+          </div>
+        </div>
+
+        {/* KPI 4: Bài đã nộp (Indigo Palette) */}
+        <div className="rounded-xl border border-indigo-100 bg-gradient-to-br from-indigo-50/80 via-white to-indigo-50/30 p-3 sm:p-3.5 shadow-2xs hover:border-indigo-300 transition-colors">
+          <div className="flex items-center justify-between text-indigo-800">
+            <span className="text-[11px] font-semibold">Bài viết đã nộp</span>
+            <div className="grid size-6 place-items-center rounded-md bg-indigo-100 text-indigo-600">
+              <HugeiconsIcon icon={Edit02Icon} size={14} />
+            </div>
+          </div>
+          <div className="mt-1.5 flex items-baseline justify-between">
+            <span className="font-heading font-mono text-2xl font-bold text-indigo-800">
+              {submissions.length}
+            </span>
+            <span className="rounded-md bg-indigo-100/90 px-1.5 py-0.5 text-[10px] font-medium text-indigo-800">
+              {completedSubmissions.length} đã chấm
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* 3. Bố cục 2 Cột Cân bằng (Layout 6:6 hoặc 7:5 với Tight Padding) */}
+      <div className="grid gap-4 lg:grid-cols-12 items-start">
+        {/* CỘT TRÁI (7 cols): Điểm cần cải thiện + Tiến độ ghi nhớ */}
+        <div className="lg:col-span-7 space-y-4">
+          {/* Card: Điểm cần chú ý & cải thiện */}
+          <Card className="border border-slate-200/90 bg-white shadow-2xs">
+            <CardHeader className="p-3.5 sm:p-4 pb-2.5 border-b border-slate-100 flex flex-row items-center justify-between space-y-0">
+              <div className="flex items-center gap-2">
+                <div className="grid size-6 place-items-center rounded-md bg-rose-50 text-rose-600">
+                  <HugeiconsIcon icon={AlertCircleIcon} size={14} />
                 </div>
-                <CardTitle className="font-heading text-3xl">Your first essay starts the memory</CardTitle>
-                <CardDescription className="mt-3 max-w-md text-base leading-7">
-                  Submit a real IELTS response. Draftwise will preserve the original version and prepare it for analysis.
-                </CardDescription>
-                <Button asChild className="mt-7 rounded-full" size="lg">
-                  <Link href="/dashboard/new">Write your first essay</Link>
-                </Button>
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="grid gap-3">
-              {submissions.map((submission) => (
-                <Link href={`/dashboard/submissions/${submission.id}`} key={submission.id}>
-                  <Card className="bg-card/80 py-0 transition-transform hover:-translate-y-0.5 hover:ring-foreground/25">
-                    <CardContent className="grid gap-5 px-5 py-5 sm:grid-cols-[1fr_auto] sm:items-center sm:px-6">
-                      <div className="min-w-0">
-                        <div className="mb-2 flex flex-wrap items-center gap-2">
-                          <Badge variant="secondary">
-                            {submission.taskType === "TASK_1" ? "Academic Task 1" : "Task 2"}
-                          </Badge>
-                          <span className="text-xs text-muted-foreground">
-                            {submission.questionType}
+                <CardTitle className="text-xs sm:text-sm font-bold text-foreground">
+                  Điểm cần lưu ý & cải thiện
+                </CardTitle>
+              </div>
+              {overview.lastAnalyzedSubmissionId ? (
+                <Link
+                  href={`/dashboard/submissions/${overview.lastAnalyzedSubmissionId}`}
+                  className="text-[11px] font-semibold text-primary hover:underline"
+                >
+                  Xem bài chấm →
+                </Link>
+              ) : null}
+            </CardHeader>
+            <CardContent className="p-3 sm:p-3.5">
+              {overview.focusWeaknesses.length > 0 ? (
+                <div className="space-y-2">
+                  {overview.focusWeaknesses.map((weakness, idx) => (
+                    <div
+                      key={idx}
+                      className="flex items-start gap-2.5 rounded-lg border border-rose-100/80 bg-rose-50/50 px-3 py-2 text-xs transition-colors hover:bg-rose-50"
+                    >
+                      <span className="mt-0.5 flex size-4 shrink-0 items-center justify-center rounded-full bg-rose-200/80 font-mono text-[9px] font-bold text-rose-800">
+                        {idx + 1}
+                      </span>
+                      <p className="font-medium text-slate-800 leading-snug">
+                        {weakness}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="py-4 text-center text-xs text-muted-foreground">
+                  <p>Sau khi nộp bài, AI sẽ ghi chú các lỗi cấu trúc & ngữ pháp cần tránh tại đây.</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Card: Chu kỳ ghi nhớ (Spaced Repetition) */}
+          <Card className="border border-slate-200/90 bg-white shadow-2xs">
+            <CardHeader className="p-3.5 sm:p-4 pb-2.5 border-b border-slate-100 flex flex-row items-center justify-between space-y-0">
+              <div className="flex items-center gap-2">
+                <div className="grid size-6 place-items-center rounded-md bg-sky-50 text-sky-600">
+                  <HugeiconsIcon icon={RepeatIcon} size={14} />
+                </div>
+                <CardTitle className="text-xs sm:text-sm font-bold text-foreground">
+                  Chu kỳ ghi nhớ (Spaced Repetition)
+                </CardTitle>
+              </div>
+              <span className="text-[11px] font-mono font-bold text-emerald-600">
+                {overview.masteryRate}% thành thạo
+              </span>
+            </CardHeader>
+            <CardContent className="p-3 sm:p-3.5 space-y-3">
+              {/* Mini progress bar */}
+              <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
+                <div
+                  className="h-full rounded-full bg-gradient-to-r from-sky-500 to-emerald-500 transition-all duration-500"
+                  style={{ width: `${Math.min(overview.masteryRate, 100)}%` }}
+                />
+              </div>
+
+              {/* 2 ô mini action */}
+              <div className="grid grid-cols-2 gap-2.5">
+                <div className="rounded-lg border border-slate-100 bg-slate-50/80 p-2.5">
+                  <p className="text-[10px] font-semibold text-muted-foreground">Luyện phản xạ nhanh</p>
+                  <p className="mt-0.5 font-mono text-sm font-bold text-sky-700">
+                    {overview.learningStats.quick} cụm từ
+                  </p>
+                  <Link
+                    href="/dashboard/review?mode=quick"
+                    className="mt-1 inline-block text-[10px] font-bold text-primary hover:underline"
+                  >
+                    Luyện 5 phút →
+                  </Link>
+                </div>
+
+                <div className="rounded-lg border border-slate-100 bg-slate-50/80 p-2.5">
+                  <p className="text-[10px] font-semibold text-muted-foreground">Bộ đề tự tải lên</p>
+                  <p className="mt-0.5 font-mono text-sm font-bold text-slate-800">
+                    {overview.learningStats.uploaded} nội dung
+                  </p>
+                  <Link
+                    href="/dashboard/learning"
+                    className="mt-1 inline-block text-[10px] font-bold text-primary hover:underline"
+                  >
+                    Mở thư viện →
+                  </Link>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* CỘT PHẢI (5 cols): Danh sách Bài viết gần đây */}
+        <div className="lg:col-span-5">
+          <Card className="border border-slate-200/90 bg-white shadow-2xs">
+            <CardHeader className="p-3.5 sm:p-4 pb-2.5 border-b border-slate-100 flex flex-row items-center justify-between space-y-0">
+              <div className="flex items-center gap-2">
+                <div className="grid size-6 place-items-center rounded-md bg-indigo-50 text-indigo-600">
+                  <HugeiconsIcon icon={Edit02Icon} size={14} />
+                </div>
+                <CardTitle className="text-xs sm:text-sm font-bold text-foreground">
+                  Bài viết gần đây
+                </CardTitle>
+              </div>
+              <Link
+                href="/dashboard/new"
+                className="text-[11px] font-semibold text-primary hover:underline"
+              >
+                + Viết bài
+              </Link>
+            </CardHeader>
+
+            <CardContent className="p-2 sm:p-2.5">
+              {submissions.length === 0 ? (
+                <div className="py-6 text-center text-xs text-muted-foreground space-y-2">
+                  <p>Bạn chưa có bài viết nào.</p>
+                  <Button asChild size="sm" className="h-8 rounded-lg font-bold text-xs">
+                    <Link href="/dashboard/new">Viết bài luận đầu tiên</Link>
+                  </Button>
+                </div>
+              ) : (
+                <div className="divide-y divide-slate-100">
+                  {submissions.map((item) => (
+                    <Link
+                      key={item.id}
+                      href={`/dashboard/submissions/${item.id}`}
+                      className="group flex items-center justify-between p-2.5 rounded-lg hover:bg-slate-50/80 transition-colors"
+                    >
+                      <div className="min-w-0 pr-2">
+                        <div className="flex items-center gap-1.5">
+                          <span
+                            className={`rounded px-1.5 py-0.2 font-mono text-[10px] font-semibold ${
+                              item.taskType === "TASK_1"
+                                ? "bg-sky-50 text-sky-700 border border-sky-200/70"
+                                : "bg-indigo-50 text-indigo-700 border border-indigo-200/70"
+                            }`}
+                          >
+                            {item.taskType === "TASK_1" ? "Task 1" : "Task 2"}
+                          </span>
+                          <span className="font-mono text-[11px] text-muted-foreground">
+                            {item.wordCount} từ
                           </span>
                         </div>
-                        <p className="font-heading text-xl font-medium">
-                          {submission.wordCount} words
-                          {submission.estimatedOverallBand !== null
-                            ? ` · Estimated band ${submission.estimatedOverallBand}`
-                            : ""}
-                        </p>
-                        <p className="mt-1 text-sm text-muted-foreground">
-                          Submitted {new Intl.DateTimeFormat("en", {
-                            dateStyle: "medium",
+                        <p className="mt-0.5 text-[10px] text-muted-foreground truncate">
+                          {new Intl.DateTimeFormat("vi-VN", {
+                            dateStyle: "short",
                             timeStyle: "short",
-                          }).format(new Date(submission.submittedAt))}
+                          }).format(new Date(item.submittedAt))}
                         </p>
                       </div>
-                      <div className="flex items-center gap-3 sm:justify-end">
-                        <Badge
-                          className={statusStyles[submission.status]}
-                          variant="outline"
-                        >
-                          {statusLabels[submission.status]}
-                        </Badge>
-                        <span aria-hidden="true" className="text-muted-foreground">→</span>
+
+                      <div className="flex items-center gap-2 shrink-0">
+                        {item.estimatedOverallBand !== null ? (
+                          <div className="rounded-md bg-emerald-50 px-2 py-0.5 border border-emerald-200 text-center">
+                            <span className="text-[9px] text-emerald-800 font-medium block leading-none">Band</span>
+                            <span className="font-mono text-sm font-bold text-emerald-700 leading-tight">
+                              {item.estimatedOverallBand.toFixed(1)}
+                            </span>
+                          </div>
+                        ) : (
+                          <Badge className={`${statusStyles[item.status]} text-[10px] px-1.5 py-0`} variant="outline">
+                            {statusLabels[item.status]}
+                          </Badge>
+                        )}
+                        <span className="text-xs text-muted-foreground group-hover:text-primary group-hover:translate-x-0.5 transition-all">
+                          →
+                        </span>
                       </div>
-                    </CardContent>
-                  </Card>
-                </Link>
-              ))}
-            </div>
-          )}
-        </section>
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
       </div>
-    </main>
+    </div>
   );
 }

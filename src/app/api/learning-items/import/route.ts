@@ -9,6 +9,10 @@ import { uploadedQuizTypes } from "@/server/learning/learning-item.schema";
 
 const maxFileSize = 1024 * 1024;
 
+function isUploadedQuizType(value: unknown): value is (typeof uploadedQuizTypes)[number] {
+  return typeof value === "string" && (uploadedQuizTypes as readonly string[]).includes(value);
+}
+
 function getPositiveInteger(value: string | null, fallback: number) {
   const parsed = Number(value);
   return Number.isInteger(parsed) && parsed > 0 ? parsed : fallback;
@@ -20,13 +24,14 @@ export async function GET(request: Request) {
     const url = new URL(request.url);
     const quizType = url.searchParams.get("quizType");
 
-    if (quizType !== "PARAPHRASE" && quizType !== "SYNONYM") {
+    if (!isUploadedQuizType(quizType)) {
       return Response.json({ error: "QUIZ_TYPE_REQUIRED" }, { status: 400 });
     }
 
     const page = getPositiveInteger(url.searchParams.get("page"), 1);
     const pageSize = getPositiveInteger(url.searchParams.get("pageSize"), 6);
-    return Response.json({ data: await listUploadedQuizTopics(user.id, quizType, page, pageSize) });
+    const search = url.searchParams.get("search") || undefined;
+    return Response.json({ data: await listUploadedQuizTopics(user.id, quizType, page, pageSize, search) });
   } catch (error) {
     return errorResponse(error);
   }
@@ -47,13 +52,13 @@ export async function POST(request: Request) {
       return Response.json({ error: "CSV_FILE_SIZE" }, { status: 400 });
     }
 
-    if (typeof quizType !== "string" || !uploadedQuizTypes.includes(quizType as (typeof uploadedQuizTypes)[number])) {
+    if (!isUploadedQuizType(quizType)) {
       return Response.json({ error: "QUIZ_TYPE_REQUIRED" }, { status: 400 });
     }
 
     const input = parseQuickQuizCsv(
       await file.text(),
-      quizType as (typeof uploadedQuizTypes)[number],
+      quizType,
     );
     return Response.json({ data: await importQuickLearningItems(user.id, input) });
   } catch (error) {

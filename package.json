@@ -4,13 +4,22 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "dev:admin": "pnpm --dir admin dev",
     "worker": "tsx src/worker/analysis.worker.ts",
-    "build": "next build",
+    "content:migrate-uploaded-quizzes": "tsx scripts/migrate-uploaded-quizzes.ts",
+    "auth:bootstrap-admin": "tsx scripts/bootstrap-admin.ts",
+    "build": "next build --webpack",
+    "build:admin": "pnpm --dir admin build",
     "start": "next start",
     "lint": "eslint",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "typecheck:admin": "pnpm --dir admin typecheck",
+    "lint:admin": "pnpm --dir admin lint"
   },
   "dependencies": {
+    "@draftwise/auth": "workspace:*",
+    "@draftwise/content": "workspace:*",
+    "@draftwise/ui": "workspace:*",
     "@auth/mongodb-adapter": "^3.11.3",
     "@fontsource/be-vietnam-pro": "^5.3.0",
     "@hugeicons/core-free-icons": "^4.3.2",

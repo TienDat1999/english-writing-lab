@@ -1,8 +1,15 @@
+import {
+  ArrowRight01Icon,
+  BookOpen01Icon,
+  Clock01Icon,
+  SparklesIcon,
+  Upload01Icon,
+} from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { auth } from "@/auth";
-import { AppBrand } from "@/components/app-brand";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -23,59 +30,140 @@ export default async function LearningPage() {
 
   await syncLearningItemsFromCompletedSubmissions(session.user.id);
 
-  const [items, uploadedTopics, stats] = await Promise.all([
-    listLearningItems(session.user.id, 1, 6),
+  const [items, masteredItems, uploadedTopics, stats] = await Promise.all([
+    listLearningItems(session.user.id, 1, 24),
+    listLearningItems(session.user.id, 1, 12, { status: "MASTERED" }),
     Promise.all([
+      listUploadedQuizTopics(session.user.id, "COLLOCATION", 1, 6),
+      listUploadedQuizTopics(session.user.id, "TOPIC_VOCABULARY", 1, 6),
       listUploadedQuizTopics(session.user.id, "PARAPHRASE", 1, 6),
       listUploadedQuizTopics(session.user.id, "SYNONYM", 1, 6),
+      listUploadedQuizTopics(session.user.id, "TEMPLATE", 1, 6),
     ]),
     getLearningStats(session.user.id),
   ]);
 
   return (
-    <main className="min-h-screen bg-background text-foreground">
-      <header className="sticky top-0 z-30 border-b border-blue-100 bg-white/90 backdrop-blur-xl">
-        <div className="mx-auto flex h-20 max-w-6xl items-center justify-between px-5 sm:px-8">
-          <AppBrand />
-          <Button asChild variant="ghost"><Link href="/dashboard">← Dashboard</Link></Button>
+    <div className="mx-auto max-w-7xl px-4 py-5 sm:px-6 lg:px-8 space-y-5">
+      {/* Header & Quick Action Buttons */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-slate-200/80 pb-4">
+        <div>
+          <div className="flex items-center gap-2">
+            <Badge variant="secondary" className="text-xs">
+              Thư viện cá nhân
+            </Badge>
+            <span className="text-xs font-semibold text-muted-foreground">Kho kiến thức & Luyện đề</span>
+          </div>
+          <h1 className="mt-1 font-heading text-xl sm:text-2xl font-bold tracking-tight text-foreground">
+            Thư viện học của Bạn
+          </h1>
+          <p className="mt-0.5 text-xs sm:text-sm text-muted-foreground">
+            Các mẫu câu, từ vựng và chủ đề trích xuất từ bài viết hoặc bộ đề tự tải lên để ghi nhớ dài hạn.
+          </p>
         </div>
-      </header>
-      <div className="mx-auto max-w-6xl px-5 py-12 sm:px-8 lg:py-16">
-        <section className="prep-hero prep-grid relative overflow-hidden rounded-[2.25rem] px-7 py-10 text-white shadow-[0_24px_60px_rgb(20_84_205/20%)] sm:px-10 md:flex md:items-end md:justify-between md:gap-6">
-          <div>
-            <Badge className="mb-5 border-white/20 bg-white/10 text-white" variant="outline">Personal memory</Badge>
-            <h1 className="font-heading text-4xl font-extrabold tracking-tight sm:text-5xl">Learning library</h1>
-            <p className="mt-4 max-w-2xl text-lg leading-8 text-blue-100">
-              Những mẫu câu và lỗi đáng nhớ được lấy trực tiếp từ bài viết của mày.
-            </p>
-          </div>
-          <div className="mt-7 flex flex-wrap gap-3 md:mt-0 md:justify-end">
-            <Button asChild className="h-12 border-white/30 bg-white/10 px-6 font-bold text-white hover:bg-white/20" size="lg" variant="outline">
-              <Link href="/dashboard/learning/import">Upload bộ quiz</Link>
-            </Button>
-            <Button asChild className="h-12 border-amber-300 bg-amber-300 px-6 font-bold text-blue-950 hover:bg-amber-200" size="lg" variant="outline">
-              <Link href="/dashboard/review?mode=quick">Quick Quiz · {stats.quick}</Link>
-            </Button>
-            <Button asChild className="h-12 bg-white px-6 font-bold text-primary hover:bg-blue-50" size="lg" variant="outline">
-              <Link href="/dashboard/review">Ôn {stats.due} nội dung đến hạn →</Link>
-            </Button>
-          </div>
-        </section>
 
-        <section className="my-10 grid gap-4 sm:grid-cols-3">
-          <div className="prep-shadow rounded-3xl border-t-4 border-t-primary bg-card p-6"><p className="text-sm text-muted-foreground">Đã lưu</p><p className="mt-2 font-heading text-4xl font-extrabold">{stats.total}</p></div>
-          <div className="prep-shadow rounded-3xl border-t-4 border-t-amber-400 bg-card p-6"><p className="text-sm text-muted-foreground">Đến hạn hôm nay</p><p className="mt-2 font-heading text-4xl font-extrabold">{stats.due}</p></div>
-          <div className="prep-shadow rounded-3xl border-t-4 border-t-emerald-400 bg-card p-6"><p className="text-sm text-muted-foreground">Đã thành thạo</p><p className="mt-2 font-heading text-4xl font-extrabold">{stats.mastered}</p></div>
-        </section>
-
-        <LearningLibrary
-          initialItems={items}
-          initialUploadedTopics={{
-            PARAPHRASE: uploadedTopics[0],
-            SYNONYM: uploadedTopics[1],
-          }}
-        />
+        <div className="flex flex-wrap items-center gap-2 shrink-0">
+          <Button asChild size="sm" variant="outline" className="h-9 text-xs font-semibold bg-white">
+            <Link href="/dashboard/learning/import" className="inline-flex items-center gap-1.5">
+              <HugeiconsIcon icon={Upload01Icon} size={14} />
+              <span>Tải lên quiz</span>
+            </Link>
+          </Button>
+          <Button asChild size="sm" variant="outline" className="h-9 text-xs font-semibold bg-white">
+            <Link href="/dashboard/review?mode=quick" className="inline-flex items-center gap-1.5">
+              <HugeiconsIcon icon={Clock01Icon} size={14} />
+              <span>Luyện 5p ({stats.quick})</span>
+            </Link>
+          </Button>
+          {stats.due > 0 && (
+            <Button asChild size="sm" className="h-9 text-xs font-bold bg-amber-600 hover:bg-amber-700 text-white shadow-2xs">
+              <Link href="/dashboard/review" className="inline-flex items-center gap-1.5">
+                <span>Ôn {stats.due} mục đến hạn</span>
+                <HugeiconsIcon icon={ArrowRight01Icon} size={14} />
+              </Link>
+            </Button>
+          )}
+        </div>
       </div>
-    </main>
+
+      {/* 3 KPI Stats Cards (Tinted Pastel Palette - Đẹp mắt & Thoát dáng) */}
+      <section className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        {/* KPI 1: Đã lưu */}
+        <div className="rounded-xl border border-sky-100 bg-gradient-to-br from-sky-50/80 via-white to-sky-50/30 p-3.5 shadow-2xs hover:border-sky-300 transition-colors">
+          <div className="flex items-center justify-between text-sky-800">
+            <span className="text-[11px] font-semibold">Đã lưu trong bộ nhớ</span>
+            <div className="grid size-6 place-items-center rounded-md bg-sky-100 text-sky-600">
+              <HugeiconsIcon icon={BookOpen01Icon} size={14} />
+            </div>
+          </div>
+          <div className="mt-1.5 flex items-baseline justify-between">
+            <span className="font-heading font-mono text-2xl font-bold text-sky-700">
+              {stats.total}
+            </span>
+            <span className="rounded-md bg-sky-100/90 px-1.5 py-0.5 text-[10px] font-medium text-sky-800">
+              Tổng nội dung
+            </span>
+          </div>
+        </div>
+
+        {/* KPI 2: Đến hạn ôn */}
+        <div className="rounded-xl border border-amber-100 bg-gradient-to-br from-amber-50/80 via-white to-amber-50/30 p-3.5 shadow-2xs hover:border-amber-300 transition-colors">
+          <div className="flex items-center justify-between text-amber-800">
+            <span className="text-[11px] font-semibold">Đến hạn ôn hôm nay</span>
+            <div className="grid size-6 place-items-center rounded-md bg-amber-100 text-amber-600">
+              <HugeiconsIcon icon={Clock01Icon} size={14} />
+            </div>
+          </div>
+          <div className="mt-1.5 flex items-baseline justify-between">
+            <span className="font-heading font-mono text-2xl font-bold text-amber-700">
+              {stats.due}
+            </span>
+            {stats.due > 0 ? (
+              <Link
+                href="/dashboard/review"
+                className="rounded-md bg-amber-200/80 px-2 py-0.5 text-[10px] font-bold text-amber-900 hover:bg-amber-300/80 transition-colors"
+              >
+                Ôn ngay →
+              </Link>
+            ) : (
+              <span className="rounded-md bg-amber-100/90 px-1.5 py-0.5 text-[10px] font-medium text-amber-800">
+                Đã xong
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* KPI 3: Đã thành thạo */}
+        <div className="rounded-xl border border-emerald-100 bg-gradient-to-br from-emerald-50/80 via-white to-emerald-50/30 p-3.5 shadow-2xs hover:border-emerald-300 transition-colors">
+          <div className="flex items-center justify-between text-emerald-800">
+            <span className="text-[11px] font-semibold">Đã thành thạo</span>
+            <div className="grid size-6 place-items-center rounded-md bg-emerald-100 text-emerald-600">
+              <HugeiconsIcon icon={SparklesIcon} size={14} />
+            </div>
+          </div>
+          <div className="mt-1.5 flex items-baseline justify-between">
+            <span className="font-heading font-mono text-2xl font-bold text-emerald-700">
+              {stats.mastered}
+            </span>
+            <span className="rounded-md bg-emerald-100/90 px-1.5 py-0.5 text-[10px] font-bold text-emerald-800">
+              {stats.total > 0 ? Math.round((stats.mastered / stats.total) * 100) : 0}% mục tiêu
+            </span>
+          </div>
+        </div>
+      </section>
+
+      {/* Main Library Component with Tabs & Topic Filtering */}
+      <LearningLibrary
+        initialItems={items}
+        initialMasteredItems={masteredItems}
+        initialUploadedTopics={{
+          COLLOCATION: uploadedTopics[0],
+          TOPIC_VOCABULARY: uploadedTopics[1],
+          PARAPHRASE: uploadedTopics[2],
+          SYNONYM: uploadedTopics[3],
+          TEMPLATE: uploadedTopics[4],
+        }}
+      />
+    </div>
   );
 }

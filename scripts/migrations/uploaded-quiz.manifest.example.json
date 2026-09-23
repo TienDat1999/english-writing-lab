@@ -1,0 +1,57 @@
+{
+  "actorUserId": "000000000000000000000001",
+  "groups": [
+    {
+      "source": {
+        "ownerUserId": "000000000000000000000002",
+        "quizType": "PARAPHRASE",
+        "topicText": "Advertising",
+        "expectedSourceHash": "0000000000000000000000000000000000000000000000000000000000000000"
+      },
+      "approvedForPublicDraft": true,
+      "rightsConfirmed": true,
+      "lesson": {
+        "defaultLocale": "en",
+        "slugs": [
+          { "locale": "en", "slug": "advertising-paraphrases" },
+          { "locale": "vi", "slug": "cum-tu-paraphrase-chu-de-quang-cao" }
+        ],
+        "learningLanguage": "en",
+        "localizations": [
+          {
+            "locale": "en",
+            "title": "Advertising paraphrases",
+            "shortDescription": "Practise useful paraphrases for advertising topics.",
+            "learningObjectives": ["Recall and apply common advertising paraphrases."],
+            "contentBlocks": []
+          },
+          {
+            "locale": "vi",
+            "title": "Paraphrase chu de quang cao",
+            "shortDescription": "Luyen cac cum paraphrase thuong gap trong chu de quang cao.",
+            "learningObjectives": ["Ghi nho va ung dung cac cum paraphrase ve quang cao."],
+            "contentBlocks": []
+          }
+        ],
+        "cefrLevelMin": "B1",
+        "cefrLevelMax": "B2",
+        "audiences": ["IELTS_ACADEMIC", "IELTS_GENERAL_TRAINING"],
+        "ieltsMetadata": {
+          "bandMin": 5.5,
+          "bandMax": 7,
+          "module": "BOTH",
+          "skillArea": "TASK_2"
+        },
+        "primaryTopicId": "000000000000000000000003",
+        "secondaryTopicIds": [],
+        "tagCodes": ["advertising", "paraphrase"],
+        "estimatedMinutes": 15,
+        "visibility": "PRIVATE",
+        "accessTier": "FREE",
+        "coverAssetId": null,
+        "prerequisiteLessonIds": [],
+        "relatedLessonIds": []
+      }
+    }
+  ]
+}

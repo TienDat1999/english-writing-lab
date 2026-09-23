@@ -60,6 +60,7 @@ export function parseQuickQuizCsv(value: string, quizType: UploadedQuizType) {
       prompt: cells[1] ?? "",
       answer: cells[2] ?? "",
       context: cells[3] ?? "",
+      applicationPromptVi: "",
     })),
   });
 }

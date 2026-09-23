@@ -30,6 +30,7 @@ export const importQuickLearningItemsSchema = z.object({
     prompt: z.string().trim().min(1).max(500),
     answer: z.string().trim().min(1).max(200),
     context: z.string().trim().max(2_000).default(""),
+    applicationPromptVi: z.string().trim().max(1_000).default(""),
   })).min(1).max(1_000),
 });
 

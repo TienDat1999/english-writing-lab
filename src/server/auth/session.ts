@@ -4,6 +4,9 @@ import { cache } from "react";
 
 import { auth } from "@/auth";
 
+import { requirePermission } from "./authorization";
+import type { ApplicationPermission } from "./authorization.constants";
+
 export class UnauthorizedError extends Error {
   constructor() {
     super("Authentication required");
@@ -25,3 +28,10 @@ export const requireUser = cache(async () => {
   };
 });
 
+export const requireAuthorizedUser = cache(async (
+  permission: ApplicationPermission,
+) => {
+  const user = await requireUser();
+  const authorization = await requirePermission(user.id, permission);
+  return { ...user, authorization };
+});

@@ -32,8 +32,17 @@ type LearningSource = {
   contextText: string;
 };
 
+export type LearningSubmissionInfo = {
+  id: string;
+  promptText: string;
+  taskType?: string;
+  submittedAt?: string;
+};
+
 export type LearningItemView = {
   id: string;
+  sourceSubmissionId?: string | null;
+  submission?: LearningSubmissionInfo | null;
   sourceType: "VOCABULARY" | "GRAMMAR" | "ESSAY_BLUEPRINT" | "TRANSLATION" | "PHRASE" | "UPLOADED_QUIZ";
   title: string;
   topicText: string;
@@ -47,6 +56,7 @@ export type LearningItemView = {
   repetitions: number;
   intervalDays: number;
   nextReviewAt: string;
+  createdAt: string;
 };
 
 function requireObjectId(value: string) {
@@ -57,9 +67,22 @@ function requireObjectId(value: string) {
   return new Types.ObjectId(value);
 }
 
-function toView(item: LearningItemDocument & { _id: Types.ObjectId }): LearningItemView {
+function toView(
+  item: LearningItemDocument & { _id: Types.ObjectId },
+  submissionMap?: Map<string, { promptText: string; taskType: string; submittedAt?: Date; createdAt?: Date }>,
+): LearningItemView {
+  const submissionIdStr = item.sourceSubmissionId ? item.sourceSubmissionId.toString() : null;
+  const sub = submissionIdStr && submissionMap ? submissionMap.get(submissionIdStr) : null;
+
   return {
     id: item._id.toString(),
+    sourceSubmissionId: submissionIdStr,
+    submission: submissionIdStr && sub ? {
+      id: submissionIdStr,
+      promptText: sub.promptText || "Bài viết của bạn",
+      taskType: sub.taskType,
+      submittedAt: (sub.submittedAt || sub.createdAt || item.createdAt)?.toISOString(),
+    } : null,
     sourceType: item.sourceType,
     title: item.title,
     topicText: item.topicText ?? "",
@@ -73,6 +96,7 @@ function toView(item: LearningItemDocument & { _id: Types.ObjectId }): LearningI
     repetitions: item.repetitions,
     intervalDays: item.intervalDays,
     nextReviewAt: item.nextReviewAt.toISOString(),
+    createdAt: (item.createdAt ?? new Date()).toISOString(),
   };
 }
 
@@ -116,6 +140,7 @@ function toUploadedQuizView(item: LearningItemDocument & { _id: Types.ObjectId }
 export type UploadedQuizTopicView = {
   topic: string;
   count: number;
+  completedCount: number;
   completed: boolean;
   quizType: UploadedQuizType;
 };
@@ -131,7 +156,7 @@ export type PaginatedResult<T> = {
 function getPagination(page = 1, pageSize = 6) {
   return {
     page: Number.isInteger(page) && page > 0 ? page : 1,
-    pageSize: Number.isInteger(pageSize) && pageSize > 0 ? Math.min(pageSize, 24) : 6,
+    pageSize: Number.isInteger(pageSize) && pageSize > 0 ? Math.min(pageSize, 60) : 6,
   };
 }
 
@@ -360,7 +385,7 @@ export async function importQuickLearningItems(
             topicText: source.topic,
             promptText: source.prompt,
             answerText: source.answer,
-            applicationPromptVi: "",
+            applicationPromptVi: source.applicationPromptVi,
             applicationReferenceEn: "",
             hintVi: "",
             contextText: source.context || `${source.prompt} ${source.answer}`,
@@ -380,55 +405,86 @@ export async function importQuickLearningItems(
   };
 }
 
+export type ListLearningItemsOptions = {
+  search?: string;
+  sourceType?: string;
+  status?: string;
+};
+
 export async function listLearningItems(
   userId: string,
   requestedPage = 1,
   requestedPageSize = 6,
+  options?: ListLearningItemsOptions,
 ): Promise<PaginatedResult<LearningItemView>> {
   await connectMongoose();
   const { page, pageSize } = getPagination(requestedPage, requestedPageSize);
   const ownerId = requireObjectId(userId);
-  const translationFilter = {
+
+  const filter: Record<string, unknown> = {
     userId: ownerId,
     deletedAt: null,
-    sourceType: "TRANSLATION",
     title: { $ne: "Imported Quick Quiz" },
   };
-  const otherFilter = {
-    userId: ownerId,
-    deletedAt: null,
-    sourceType: { $nin: ["UPLOADED_QUIZ", "TRANSLATION"] },
-    title: { $ne: "Imported Quick Quiz" },
-  };
-  const [translationTotal, otherTotal] = await Promise.all([
-    LearningItem.countDocuments(translationFilter),
-    LearningItem.countDocuments(otherFilter),
+
+  if (options?.sourceType && options.sourceType !== "ALL") {
+    filter.sourceType = options.sourceType;
+  } else {
+    filter.sourceType = { $ne: "UPLOADED_QUIZ" };
+  }
+
+  if (options?.status && options.status !== "ALL") {
+    if (options.status === "DUE") {
+      filter.nextReviewAt = { $lte: new Date() };
+    } else {
+      filter.status = options.status;
+    }
+  }
+
+  if (options?.search) {
+    const escaped = options.search.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    filter.$or = [
+      { promptText: { $regex: escaped, $options: "i" } },
+      { answerText: { $regex: escaped, $options: "i" } },
+      { hintVi: { $regex: escaped, $options: "i" } },
+      { topicText: { $regex: escaped, $options: "i" } },
+      { title: { $regex: escaped, $options: "i" } },
+    ];
+  }
+
+  const [totalItems, items] = await Promise.all([
+    LearningItem.countDocuments(filter),
+    LearningItem.find(filter)
+      .sort({ createdAt: -1, nextReviewAt: 1 })
+      .skip((page - 1) * pageSize)
+      .limit(pageSize)
+      .lean(),
   ]);
-  const offset = (page - 1) * pageSize;
-  const translationLimit = offset < translationTotal
-    ? Math.min(pageSize, translationTotal - offset)
-    : 0;
-  const translations = translationLimit > 0
-    ? await LearningItem.find(translationFilter)
-        .sort({ nextReviewAt: 1, createdAt: -1 })
-        .skip(offset)
-        .limit(translationLimit)
-        .lean()
-    : [];
-  const remainingLimit = pageSize - translations.length;
-  const otherOffset = Math.max(0, offset - translationTotal);
-  const otherItems = remainingLimit > 0
-    ? await LearningItem.find(otherFilter)
-        .sort({ nextReviewAt: 1, createdAt: -1 })
-        .skip(otherOffset)
-        .limit(remainingLimit)
-        .lean()
-    : [];
-  const totalItems = translationTotal + otherTotal;
-  const items = [...translations, ...otherItems];
+
+  const submissionIds = [
+    ...new Set(
+      items
+        .map((item) => item.sourceSubmissionId)
+        .filter((id): id is Types.ObjectId => Boolean(id)),
+    ),
+  ];
+
+  let submissionMap = new Map<string, { promptText: string; taskType: string; submittedAt?: Date; createdAt?: Date }>();
+
+  if (submissionIds.length > 0) {
+    const submissions = await Submission.find({
+      _id: { $in: submissionIds },
+    })
+      .select({ _id: 1, promptText: 1, taskType: 1, submittedAt: 1, createdAt: 1 })
+      .lean();
+
+    submissionMap = new Map(
+      submissions.map((s) => [s._id.toString(), s]),
+    );
+  }
 
   return {
-    items: items.map(toView),
+    items: items.map((item) => toView(item, submissionMap)),
     page,
     pageSize,
     totalItems,
@@ -452,7 +508,7 @@ export async function listDueLearningItems(userId: string): Promise<LearningItem
   return items
     .sort((left, right) => Number(right.sourceType === "TRANSLATION") - Number(left.sourceType === "TRANSLATION"))
     .slice(0, 20)
-    .map(toView);
+    .map((item) => toView(item));
 }
 
 export async function listQuickLearningItems(userId: string): Promise<LearningItemView[]> {
@@ -467,7 +523,7 @@ export async function listQuickLearningItems(userId: string): Promise<LearningIt
     .limit(50)
     .lean();
 
-  return items.map(toView);
+  return items.map((item) => toView(item));
 }
 
 export async function listUploadedQuickLearningItems(
@@ -501,10 +557,19 @@ export async function listUploadedQuizTopics(
   quizType: UploadedQuizType,
   requestedPage = 1,
   requestedPageSize = 6,
+  search?: string,
 ): Promise<PaginatedResult<UploadedQuizTopicView>> {
   await connectMongoose();
   const { page, pageSize } = getPagination(requestedPage, requestedPageSize);
   const legacyPromptPattern = quizType === "SYNONYM" ? /^Synonym of /u : /^Paraphrase /u;
+  const legacyMatch =
+    quizType === "TEMPLATE" || quizType === "COLLOCATION" || quizType === "TOPIC_VOCABULARY"
+      ? null
+      : {
+          sourceType: "PHRASE",
+          title: "Imported Quick Quiz",
+          promptText: legacyPromptPattern,
+        };
   const legacyTopicExpression = quizType === "SYNONYM"
     ? "100 cặp Synonym"
     : {
@@ -536,11 +601,7 @@ export async function listUploadedQuizTopics(
         deletedAt: null,
         $or: [
           { sourceType: "UPLOADED_QUIZ", quizType },
-          {
-            sourceType: "PHRASE",
-            title: "Imported Quick Quiz",
-            promptText: legacyPromptPattern,
-          },
+          ...(legacyMatch ? [legacyMatch] : []),
         ],
       },
     },
@@ -563,6 +624,18 @@ export async function listUploadedQuizTopics(
         completedCount: { $sum: { $cond: ["$completed", 1, 0] } },
       },
     },
+    ...(search && search.trim()
+      ? [
+          {
+            $match: {
+              _id: {
+                $regex: search.trim().replace(/[.*+?^${}()|[\]\\]/g, "\\$&"),
+                $options: "i",
+              },
+            },
+          },
+        ]
+      : []),
     { $sort: { _id: 1 } },
     {
       $facet: {
@@ -580,6 +653,7 @@ export async function listUploadedQuizTopics(
     items: (result?.items ?? []).map((item) => ({
       topic: item._id,
       count: item.count,
+      completedCount: item.completedCount,
       completed: item.completedCount === item.count,
       quizType,
     })),
@@ -774,6 +848,48 @@ export async function evaluateTranslationAttempt(
     sourceVi: item.promptText,
     referenceEn: item.answerText,
     learnerAnswer,
+  });
+  const rating: ReviewRating = evaluation.score < 50
+    ? "AGAIN"
+    : evaluation.score < 70
+      ? "HARD"
+      : evaluation.score < 90
+        ? "GOOD"
+        : "EASY";
+  const updatedItem = await reviewLearningItem(userId, learningItemId, rating, {
+    learnerAnswer,
+    evaluation,
+  });
+
+  return { evaluation, item: updatedItem };
+}
+
+export async function evaluateWritingTemplateAttempt(
+  userId: string,
+  learningItemId: string,
+  learnerAnswer: string,
+) {
+  await connectMongoose();
+  const item = await LearningItem.findOne({
+    _id: requireObjectId(learningItemId),
+    userId: requireObjectId(userId),
+    sourceType: "UPLOADED_QUIZ",
+    quizType: "TEMPLATE",
+    deletedAt: null,
+  }).lean();
+
+  if (!item || !item.applicationPromptVi) {
+    throw new ResourceNotFoundError();
+  }
+
+  const env = getAiEnv();
+  const gateway = new TranslationReviewGateway(env.OPENAI_API_KEY, env.OPENAI_MODEL);
+  const evaluation = await gateway.evaluate({
+    sourceVi: item.applicationPromptVi,
+    referenceEn: item.answerText,
+    learnerAnswer,
+    mode: "WRITING_TEMPLATE",
+    writingFunctionVi: item.promptText,
   });
   const rating: ReviewRating = evaluation.score < 50
     ? "AGAIN"

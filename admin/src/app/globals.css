@@ -1,0 +1,77 @@
+@import "tailwindcss";
+
+:root {
+  --ink: #13284a;
+  --ink-soft: #60708c;
+  --canvas: #f3f0e8;
+  --paper: #fffdf8;
+  --line: #ded8ca;
+  --navy: #102e72;
+  --navy-bright: #1959c7;
+  --amber: #f5b82e;
+  --mint: #66d8b1;
+  --danger: #b83d3d;
+}
+
+@theme inline {
+  --font-sans: "Be Vietnam Pro", sans-serif;
+  --font-heading: "Be Vietnam Pro", sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  background: var(--canvas);
+  font-family: "Be Vietnam Pro", sans-serif;
+}
+
+body {
+  min-height: 100vh;
+  min-width: 1184px;
+  margin: 0;
+  color: var(--ink);
+  background:
+    linear-gradient(90deg, rgb(19 40 74 / 3%) 1px, transparent 1px),
+    linear-gradient(rgb(19 40 74 / 3%) 1px, transparent 1px),
+    var(--canvas);
+  background-size: 32px 32px;
+}
+
+button,
+a {
+  -webkit-tap-highlight-color: transparent;
+}
+
+::selection {
+  color: var(--ink);
+  background: #ffe190;
+}
+
+.admin-panel {
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: rgb(255 254 250 / 96%);
+  box-shadow: 0 14px 40px rgb(31 47 76 / 6%);
+}
+
+.admin-kicker {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .admin-enter {
+    animation: admin-enter 420ms ease-out both;
+  }
+
+  @keyframes admin-enter {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+  }
+}

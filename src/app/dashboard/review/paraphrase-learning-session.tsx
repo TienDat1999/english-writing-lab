@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import type { LearningItemView } from "@/server/learning/learning.service";
+import { playNaturalSpeech } from "@/lib/speech";
 
 type LearningStage = "RECOGNITION" | "TRANSLATION" | "APPLICATION";
 
@@ -31,46 +32,82 @@ type ApplicationEvaluation = {
   }>;
 };
 
-function speakEnglish(text: string, rate: number) {
-  if (!("speechSynthesis" in window)) return;
+export type StepLearningConfig = {
+  /** Label cho loại câu hỏi hiển thị trên card (e.g. "Cụm từ tiếng Anh") */
+  questionLabel: string;
+  /** Placeholder input bước 2 */
+  translationPlaceholder: string;
+  /** Text tóm tắt khi hoàn thành */
+  completedSummary: string;
+  /** Text "N từ" hoàn thành */
+  unitLabel: string;
+};
 
-  window.speechSynthesis.cancel();
-  const utterance = new SpeechSynthesisUtterance(text);
-  const voices = window.speechSynthesis.getVoices();
-  utterance.lang = "en-GB";
-  utterance.rate = rate;
-  utterance.voice = voices.find((voice) => voice.lang === "en-GB")
-    ?? voices.find((voice) => voice.lang.startsWith("en"))
-    ?? null;
-  window.speechSynthesis.speak(utterance);
-}
+export const COLLOCATION_CONFIG: StepLearningConfig = {
+  questionLabel: "Cụm từ tiếng Anh",
+  translationPlaceholder: "Nhập cụm từ tiếng Anh...",
+  completedSummary: "cụm từ",
+  unitLabel: "cụm từ",
+};
+
+export const PARAPHRASE_CONFIG: StepLearningConfig = {
+  questionLabel: "Cụm từ / diễn đạt",
+  translationPlaceholder: "Nhập cụm từ tiếng Anh...",
+  completedSummary: "cụm từ",
+  unitLabel: "cụm từ",
+};
+
+export const TOPIC_VOCABULARY_CONFIG: StepLearningConfig = {
+  questionLabel: "Từ / cụm từ tiếng Anh",
+  translationPlaceholder: "Nhập từ tiếng Anh...",
+  completedSummary: "từ vựng",
+  unitLabel: "từ vựng",
+};
 
 function PronunciationControls({ text }: { text: string }) {
+  const [playingMode, setPlayingMode] = useState<"normal" | "slow" | null>(null);
+
+  function handlePlay(speed: number, mode: "normal" | "slow") {
+    void playNaturalSpeech(text, {
+      speed,
+      onStart: () => setPlayingMode(mode),
+      onEnd: () => setPlayingMode(null),
+    });
+  }
+
   return (
     <div className="flex flex-wrap gap-2">
       <Button
         aria-label={`Nghe phát âm ${text}`}
         className="rounded-full"
-        onClick={() => speakEnglish(text, 0.95)}
+        onClick={() => handlePlay(1.0, "normal")}
         size="sm"
-        title="Nghe phát âm tốc độ bình thường"
+        title="Nghe phát âm tự nhiên bằng giọng AI"
         type="button"
         variant="outline"
       >
-        <HugeiconsIcon icon={VolumeHighIcon} strokeWidth={2} />
-        Nghe
+        <HugeiconsIcon
+          icon={VolumeHighIcon}
+          strokeWidth={2}
+          className={playingMode === "normal" ? "text-primary animate-pulse" : ""}
+        />
+        {playingMode === "normal" ? "Đang đọc..." : "Nghe"}
       </Button>
       <Button
         aria-label={`Nghe chậm ${text}`}
         className="rounded-full"
-        onClick={() => speakEnglish(text, 0.65)}
+        onClick={() => handlePlay(0.75, "slow")}
         size="sm"
-        title="Nghe phát âm chậm"
+        title="Nghe phát âm chậm bằng giọng AI"
         type="button"
         variant="outline"
       >
-        <HugeiconsIcon icon={VolumeLowIcon} strokeWidth={2} />
-        Chậm
+        <HugeiconsIcon
+          icon={VolumeLowIcon}
+          strokeWidth={2}
+          className={playingMode === "slow" ? "text-primary animate-pulse" : ""}
+        />
+        {playingMode === "slow" ? "Đang đọc chậm..." : "Chậm"}
       </Button>
     </div>
   );
@@ -111,21 +148,77 @@ function normalizeAnswer(value: string) {
     .trim();
 }
 
-function buildMeaningOptions(item: LearningItemView, items: LearningItemView[]) {
-  const options = [item.promptText, ...items.map((candidate) => candidate.promptText)]
-    .filter((value, index, values) => values.indexOf(value) === index)
-    .slice(0, 4);
-  const offset = [...item.answerText].reduce((total, character) => total + character.charCodeAt(0), 0)
-    % options.length;
+function cleanMeaningText(value: string) {
+  return value.replace(/^(Ý nghĩa|Nghĩa):\s*/i, "").trim();
+}
 
-  return [...options.slice(offset), ...options.slice(0, offset)];
+const FALLBACK_DISTRACTOR_MEANINGS = [
+  "đưa ra quyết định",
+  "lập kế hoạch",
+  "hành động",
+  "chịu trách nhiệm",
+  "tạo sự khác biệt",
+  "dành thời gian cho",
+  "tận dụng cơ hội",
+  "chăm sóc chu đáo",
+  "kết bạn mới",
+  "tiến bộ vượt bậc",
+  "nỗ lực hết mình",
+  "mắc lỗi nhỏ",
+  "giữ đúng lời hứa",
+  "đạt được mục tiêu",
+  "thay đổi ý kiến",
+  "thu hút sự chú ý",
+  "tạo ấn tượng tốt",
+  "tìm ra giải pháp",
+  "vượt qua khó khăn",
+  "tham gia hoạt động",
+  "đặt lịch hẹn trước",
+  "ghi chú cẩn thận",
+  "thay phiên nhau",
+  "chia sẻ quan điểm",
+  "giải quyết vấn đề",
+  "phát huy tiềm năng",
+  "xây dựng lòng tin",
+  "nâng cao nhận thức",
+  "bảo vệ môi trường",
+  "duy trì liên lạc",
+];
+
+function buildMeaningOptions(item: LearningItemView, items: LearningItemView[]) {
+  const currentMeaning = cleanMeaningText(item.promptText);
+  const options = [currentMeaning, ...items.map((candidate) => cleanMeaningText(candidate.promptText))]
+    .filter((value, index, values) => Boolean(value) && values.indexOf(value) === index);
+
+  // Luôn đảm bảo đủ 4 options khi topic có ít hơn 4 câu hỏi
+  if (options.length < 4) {
+    const seed = [...item.answerText].reduce((sum, char) => sum + char.charCodeAt(0), 0);
+    for (let i = 0; i < FALLBACK_DISTRACTOR_MEANINGS.length && options.length < 4; i++) {
+      const candidate = FALLBACK_DISTRACTOR_MEANINGS[(seed + i) % FALLBACK_DISTRACTOR_MEANINGS.length];
+      if (!options.includes(candidate)) {
+        options.push(candidate);
+      }
+    }
+  }
+
+  const final4 = options.slice(0, 4);
+  const offset = [...item.answerText].reduce((total, character) => total + character.charCodeAt(0), 0)
+    % (final4.length || 1);
+
+  return [...final4.slice(offset), ...final4.slice(0, offset)];
 }
 
 function uniqueItems(items: LearningItemView[]) {
   return items.filter((item, index) => items.findIndex((candidate) => candidate.id === item.id) === index);
 }
 
-export function ParaphraseLearningSession({ initialItems }: { initialItems: LearningItemView[] }) {
+export function StepLearningSession({
+  initialItems,
+  config,
+}: {
+  initialItems: LearningItemView[];
+  config: StepLearningConfig;
+}) {
   const [stageIndex, setStageIndex] = useState(0);
   const [roundItems, setRoundItems] = useState(initialItems);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -229,7 +322,7 @@ export function ParaphraseLearningSession({ initialItems }: { initialItems: Lear
           <Badge className="mb-5" variant="secondary">Hoàn thành 3 bước</Badge>
           <CardTitle className="font-heading text-4xl">Đã học xong chủ đề này 🎉</CardTitle>
           <CardDescription className="mt-3 text-base leading-7">
-            Bạn đã nhận diện nghĩa, gợi nhớ từ và ứng dụng toàn bộ {initialItems.length} cụm từ vào câu.
+            Bạn đã nhận diện nghĩa, gợi nhớ từ và ứng dụng toàn bộ {initialItems.length} {config.completedSummary} vào câu.
           </CardDescription>
           <Button asChild className="mt-7 rounded-full">
             <Link href="/dashboard/learning">Về Learning Library</Link>
@@ -278,7 +371,7 @@ export function ParaphraseLearningSession({ initialItems }: { initialItems: Lear
         </div>
       </div>
 
-      <ParaphraseQuestion
+      <StepQuestion
         allItems={initialItems}
         item={item}
         key={`${stage.id}:${round}:${item.id}:${currentIndex}`}
@@ -287,13 +380,19 @@ export function ParaphraseLearningSession({ initialItems }: { initialItems: Lear
         onContinue={(isCorrect) => void continueAfterAnswer(isCorrect)}
         saving={isSaving}
         stage={stage.id}
+        config={config}
       />
       {error ? <p className="mt-4 text-sm text-destructive" role="alert">{error}</p> : null}
     </div>
   );
 }
 
-function ParaphraseQuestion({
+// Keep backward-compat alias
+export function ParaphraseLearningSession({ initialItems }: { initialItems: LearningItemView[] }) {
+  return <StepLearningSession initialItems={initialItems} config={PARAPHRASE_CONFIG} />;
+}
+
+function StepQuestion({
   allItems,
   canGoBack,
   item,
@@ -301,6 +400,7 @@ function ParaphraseQuestion({
   onContinue,
   saving,
   stage,
+  config,
 }: {
   allItems: LearningItemView[];
   canGoBack: boolean;
@@ -309,6 +409,7 @@ function ParaphraseQuestion({
   onContinue: (isCorrect: boolean) => void;
   saving: boolean;
   stage: LearningStage;
+  config: StepLearningConfig;
 }) {
   const [answer, setAnswer] = useState("");
   const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
@@ -322,11 +423,12 @@ function ParaphraseQuestion({
   const meaningOptions = buildMeaningOptions(item, allItems);
   const isRecognition = stage === "RECOGNITION";
   const isApplication = stage === "APPLICATION";
-  const questionTitle = isRecognition ? item.answerText : isApplication ? item.answerText : item.promptText;
+  const cleanedPrompt = cleanMeaningText(item.promptText);
+  const questionTitle = isRecognition ? item.answerText : isApplication ? item.answerText : cleanedPrompt;
   const questionLabel = isRecognition
-    ? "Cụm từ tiếng Anh"
+    ? config.questionLabel
     : isApplication
-      ? `Nghĩa: ${item.promptText}`
+      ? `Nghĩa: ${cleanedPrompt}`
       : item.topicText;
 
   useEffect(() => {
@@ -393,7 +495,7 @@ function ParaphraseQuestion({
     }
 
     const correct = isRecognition
-      ? selectedAnswer === item.promptText
+      ? cleanMeaningText(selectedAnswer) === cleanedPrompt
       : normalizeAnswer(selectedAnswer) === normalizeAnswer(item.answerText);
     setAnswer(selectedAnswer);
     setIsCorrect(correct);
@@ -403,6 +505,17 @@ function ParaphraseQuestion({
     if (isCorrect === null) return;
     onContinue(isCorrect);
   }
+
+  useEffect(() => {
+    function handleGlobalKeyDown(event: KeyboardEvent) {
+      if (event.key === "Enter" && !event.shiftKey && isCorrect !== null && !saving && !isChecking) {
+        event.preventDefault();
+        onContinue(isCorrect);
+      }
+    }
+    window.addEventListener("keydown", handleGlobalKeyDown);
+    return () => window.removeEventListener("keydown", handleGlobalKeyDown);
+  }, [isCorrect, saving, isChecking, onContinue]);
 
   return (
     <Card className="border-t-4 border-t-primary bg-card shadow-[0_18px_40px_rgb(35_87_170/12%)]">
@@ -468,7 +581,7 @@ function ParaphraseQuestion({
                     <>
                       <p className="mt-1 text-sm leading-6">{applicationPrompt}</p>
                       <p className="mt-1 text-xs text-amber-700">
-                        Hãy diễn đạt ý này bằng tiếng Anh và sử dụng “{item.answerText}”.
+                        Hãy diễn đạt ý này bằng tiếng Anh và sử dụng "{item.answerText}".
                       </p>
                     </>
                   ) : null}
@@ -490,12 +603,25 @@ function ParaphraseQuestion({
               </div>
             ) : null}
             <Textarea
+              autoFocus
               className="min-h-24 bg-[#f8faff] text-base leading-6"
               disabled={isCorrect !== null || isChecking}
               onChange={(event) => setAnswer(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" && !event.shiftKey) {
+                  event.preventDefault();
+                  if (isCorrect === null) {
+                    if (answer.trim() && !isChecking && (!isApplication || applicationPrompt)) {
+                      void checkAnswer();
+                    }
+                  } else if (!saving && !isChecking) {
+                    continueToNext();
+                  }
+                }
+              }}
               placeholder={isApplication
                 ? "Viết câu tiếng Anh của bạn theo ý gợi ý..."
-                : "Nhập cụm từ tiếng Anh..."}
+                : config.translationPlaceholder}
               value={answer}
             />
           </div>
@@ -526,7 +652,7 @@ function ParaphraseQuestion({
                   {isRecognition ? "Nghĩa đúng" : isApplication ? "Câu cần sử dụng cụm từ" : "Đáp án đúng"}
                 </p>
                 <p className="mt-1 text-xl font-bold text-slate-950">
-                  {isRecognition ? item.promptText : item.answerText}
+                  {isRecognition ? cleanedPrompt : item.answerText}
                 </p>
                 {!isRecognition && !isApplication ? (
                   <div className="mt-3"><PronunciationControls text={item.answerText} /></div>

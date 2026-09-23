@@ -17,7 +17,13 @@ export const masteryStatuses = [
   "REVIEW",
 ] as const;
 
-export const uploadedQuizTypes = ["PARAPHRASE", "SYNONYM"] as const;
+export const uploadedQuizTypes = [
+  "COLLOCATION",
+  "TOPIC_VOCABULARY",
+  "PARAPHRASE",
+  "SYNONYM",
+  "TEMPLATE",
+] as const;
 
 const learningItemSchema = new Schema(
   {

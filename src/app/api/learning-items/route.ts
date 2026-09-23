@@ -16,8 +16,18 @@ export async function GET(request: Request) {
     const user = await requireUser();
     const url = new URL(request.url);
     const page = getPositiveInteger(url.searchParams.get("page"), 1);
-    const pageSize = getPositiveInteger(url.searchParams.get("pageSize"), 6);
-    return Response.json({ data: await listLearningItems(user.id, page, pageSize) });
+    const pageSize = getPositiveInteger(url.searchParams.get("pageSize"), 24);
+    const search = url.searchParams.get("search")?.trim() || undefined;
+    const sourceType = url.searchParams.get("sourceType")?.trim() || undefined;
+    const status = url.searchParams.get("status")?.trim() || undefined;
+
+    return Response.json({
+      data: await listLearningItems(user.id, page, pageSize, {
+        search,
+        sourceType,
+        status,
+      }),
+    });
   } catch (error) {
     return errorResponse(error);
   }

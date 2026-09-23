@@ -11,6 +11,15 @@ importers:
       '@auth/mongodb-adapter':
         specifier: ^3.11.3
         version: 3.11.3(mongodb@6.21.0(socks@2.8.10))
+      '@draftwise/auth':
+        specifier: workspace:*
+        version: link:packages/auth
+      '@draftwise/content':
+        specifier: workspace:*
+        version: link:packages/content
+      '@draftwise/ui':
+        specifier: workspace:*
+        version: link:packages/ui
       '@fontsource/be-vietnam-pro':
         specifier: ^5.3.0
         version: 5.3.0
@@ -96,6 +105,90 @@ importers:
       typescript:
         specifier: ^5
         version: 5.9.3
+
+  admin:
+    dependencies:
+      '@draftwise/auth':
+        specifier: workspace:*
+        version: link:../packages/auth
+      '@draftwise/content':
+        specifier: workspace:*
+        version: link:../packages/content
+      '@draftwise/ui':
+        specifier: workspace:*
+        version: link:../packages/ui
+      '@fontsource/be-vietnam-pro':
+        specifier: ^5.3.0
+        version: 5.3.0
+      '@hugeicons/core-free-icons':
+        specifier: ^4.3.2
+        version: 4.3.2
+      '@hugeicons/react':
+        specifier: ^1.1.10
+        version: 1.1.10(react@19.2.8)
+      mongodb:
+        specifier: ^6.21.0
+        version: 6.21.0(socks@2.8.10)
+      next:
+        specifier: 16.3.5
+        version: 16.3.5(@babel/core@7.29.7)(@types/node@20.19.43)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      next-auth:
+        specifier: 5.0.0-beta.32
+        version: 5.0.0-beta.32(next@16.3.5(@babel/core@7.29.7)(@types/node@20.19.43)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react@19.2.8)
+      react:
+        specifier: 19.2.8
+        version: 19.2.8
+      react-dom:
+        specifier: 19.2.8
+        version: 19.2.8(react@19.2.8)
+      zod:
+        specifier: ^4.6.2
+        version: 4.6.2
+    devDependencies:
+      '@next/env':
+        specifier: 16.3.5
+        version: 16.3.5
+      '@tailwindcss/postcss':
+        specifier: ^4
+        version: 4.3.3
+      '@types/node':
+        specifier: ^20
+        version: 20.19.43
+      '@types/react':
+        specifier: ^19
+        version: 19.3.0
+      '@types/react-dom':
+        specifier: ^19
+        version: 19.3.0(@types/react@19.3.0)
+      eslint:
+        specifier: ^9
+        version: 9.39.5(jiti@2.7.0)
+      eslint-config-next:
+        specifier: 16.3.5
+        version: 16.3.5(@typescript-eslint/parser@8.70.0(eslint@9.39.5(jiti@2.7.0))(typescript@5.9.3))(eslint@9.39.5(jiti@2.7.0))(typescript@5.9.3)
+      tailwindcss:
+        specifier: ^4
+        version: 4.3.3
+      typescript:
+        specifier: ^5
+        version: 5.9.3
+
+  packages/auth: {}
+
+  packages/content:
+    dependencies:
+      zod:
+        specifier: ^4.6.2
+        version: 4.6.2
+
+  packages/ui:
+    dependencies:
+      '@draftwise/content':
+        specifier: workspace:*
+        version: link:../content
+      react:
+        specifier: ^19.0.0
+        version: 19.2.8
 
 packages:
 
