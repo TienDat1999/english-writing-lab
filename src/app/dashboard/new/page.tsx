@@ -1,12 +1,12 @@
 import { redirect } from "next/navigation";
 
-import { auth } from "@/auth";
 import { Badge } from "@/components/ui/badge";
+import { getSession } from "@/server/auth/session";
 
 import { SubmissionForm } from "./submission-form";
 
 export default async function NewSubmissionPage() {
-  const session = await auth();
+  const session = await getSession();
 
   if (!session?.user) {
     redirect("/login");

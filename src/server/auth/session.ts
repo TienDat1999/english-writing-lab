@@ -14,8 +14,10 @@ export class UnauthorizedError extends Error {
   }
 }
 
+export const getSession = cache(async () => auth());
+
 export const requireUser = cache(async () => {
-  const session = await auth();
+  const session = await getSession();
 
   if (!session?.user?.id) {
     throw new UnauthorizedError();

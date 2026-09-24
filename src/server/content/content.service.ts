@@ -31,6 +31,29 @@ import { Exercise } from "./exercise.schema";
 import { Lesson, LessonVersion } from "./lesson.schema";
 import { ContentTopic } from "./taxonomy.schema";
 import {
+  findLessonById,
+  countLessonsByIds,
+  createLesson,
+  incrementLessonVersionNumber,
+} from "./lesson.repository";
+import {
+  findLessonVersionById,
+  findDraftVersionByRevision,
+  existsLessonVersionById,
+  existsActiveWorkflow,
+  createLessonVersion,
+  resumeLessonVersionEditing,
+  cancelScheduledVersion,
+  cancelLessonVersionWorkflow,
+  supersedeLessonVersion,
+  supersedeLessonVersionForRollback,
+} from "./lesson-version.repository";
+import {
+  findExercisesByVersionId,
+  deleteExercisesByVersionId,
+  insertExercises,
+} from "./exercise.repository";
+import {
   ContentOutboxEvent,
   LessonPublicationEvent,
   LessonReviewComment,
@@ -178,10 +201,10 @@ async function validateReferences(
   }
 
   if (linkedLessonIds.length > 0) {
-    const lessonCount = await Lesson.countDocuments({
-      _id: { $in: linkedLessonIds.map(toObjectId) },
-      publicationStatus: { $ne: "WITHDRAWN" },
-    }).session(session);
+    const lessonCount = await countLessonsByIds(
+      linkedLessonIds.map(toObjectId),
+      session,
+    );
 
     if (lessonCount !== linkedLessonIds.length) {
       throw new ContentValidationError(["One or more linked lessons are unavailable."]);
@@ -233,12 +256,10 @@ function versionContentFromDocuments(
 }
 
 async function loadVersionContent(versionId: Types.ObjectId, session: ClientSession) {
-  const version = await LessonVersion.findById(versionId).session(session);
+  const version = await findLessonVersionById(versionId, session);
   if (!version) throw new ResourceNotFoundError();
 
-  const exercises = await Exercise.find({ lessonVersionId: versionId })
-    .sort({ position: 1 })
-    .session(session);
+  const exercises = await findExercisesByVersionId(versionId, session);
   const content = versionContentFromDocuments(version, exercises);
 
   return { version, exercises, content };
@@ -293,15 +314,14 @@ export async function createLessonDraft(
   try {
     await session.withTransaction(async () => {
       await validateReferences(content, session);
-      const lesson = new Lesson({
+      const lesson = await createLesson({
         defaultLocale,
         slugs,
         latestVersionNumber: 1,
         createdBy: actor.objectId,
-      });
-      await lesson.save({ session });
+      }, session);
 
-      const version = new LessonVersion({
+      const version = await createLessonVersion({
         lessonId: lesson._id,
         versionNumber: 1,
         status: "DRAFT",
@@ -310,15 +330,14 @@ export async function createLessonDraft(
         ...versionFields(content),
         createdBy: actor.objectId,
         lastEditedBy: actor.objectId,
-      });
-      await version.save({ session });
+      }, session);
 
       if (content.exercises.length > 0) {
-        await Exercise.insertMany(
+        await insertExercises(
           content.exercises.map((exercise) =>
             exerciseFields(exercise, version._id, actor.objectId),
           ),
-          { session },
+          session,
         );
       }
 
@@ -360,14 +379,14 @@ export async function updateLessonDraft(
 
   try {
     await session.withTransaction(async () => {
-      const existing = await LessonVersion.findOne({
-        _id: objectId,
-        status: "DRAFT",
-        revision: expectedRevision,
-      }).session(session);
+      const existing = await findDraftVersionByRevision(
+        objectId,
+        expectedRevision,
+        session,
+      );
 
       if (!existing) {
-        const found = await LessonVersion.exists({ _id: objectId }).session(session);
+        const found = await existsLessonVersionById(objectId, session);
         if (!found) throw new ResourceNotFoundError();
         throw new ContentConflictError("Draft revision or status has changed.");
       }
@@ -386,13 +405,13 @@ export async function updateLessonDraft(
       });
       await existing.save({ session });
 
-      await Exercise.deleteMany({ lessonVersionId: objectId }).session(session);
+      await deleteExercisesByVersionId(objectId, session);
       if (content.exercises.length > 0) {
-        await Exercise.insertMany(
+        await insertExercises(
           content.exercises.map((exercise) =>
             exerciseFields(exercise, objectId, actor.objectId),
           ),
-          { session },
+          session,
         );
       }
       await appendContentAudit(session, {
@@ -419,14 +438,7 @@ export async function resumeVersionEditing(
 ) {
   const actor = await requirePermission(actorUserId, "CONTENT_DRAFT_EDIT");
   await connectMongoose();
-  const version = await LessonVersion.findOneAndUpdate(
-    { _id: toObjectId(versionId), status: "CHANGES_REQUESTED" },
-    {
-      $set: { status: "DRAFT", lastEditedBy: actor.objectId },
-      $inc: { revision: 1 },
-    },
-    { new: true },
-  );
+  const version = await resumeLessonVersionEditing(toObjectId(versionId), actor.objectId);
 
   if (!version) throw new ContentConflictError("Version is not awaiting changes.");
   return { lessonVersionId: version.id, revision: version.revision };
@@ -444,26 +456,19 @@ export async function clonePublishedLessonVersion(
 
   try {
     await session.withTransaction(async () => {
-      const lesson = await Lesson.findById(lessonObjectId).session(session);
+      const lesson = await findLessonById(lessonObjectId, session);
       if (!lesson?.currentPublishedVersionId) throw new ResourceNotFoundError();
 
       const source = await loadVersionContent(lesson.currentPublishedVersionId, session);
-      const activeVersion = await LessonVersion.exists({
-        lessonId: lessonObjectId,
-        isActiveWorkflow: true,
-      }).session(session);
+      const activeVersion = await existsActiveWorkflow(lessonObjectId, session);
       if (activeVersion) {
         throw new ContentConflictError("Lesson already has an active version workflow.");
       }
 
-      const updatedLesson = await Lesson.findByIdAndUpdate(
-        lessonObjectId,
-        { $inc: { latestVersionNumber: 1 } },
-        { new: true, session },
-      );
+      const updatedLesson = await incrementLessonVersionNumber(lessonObjectId, session);
       if (!updatedLesson) throw new ResourceNotFoundError();
 
-      const version = new LessonVersion({
+      const version = await createLessonVersion({
         lessonId: lessonObjectId,
         versionNumber: updatedLesson.latestVersionNumber,
         status: "DRAFT",
@@ -472,13 +477,12 @@ export async function clonePublishedLessonVersion(
         ...versionFields(source.content),
         createdBy: actor.objectId,
         lastEditedBy: actor.objectId,
-      });
-      await version.save({ session });
-      await Exercise.insertMany(
+      }, session);
+      await insertExercises(
         source.content.exercises.map((exercise) =>
           exerciseFields(exercise, version._id, actor.objectId),
         ),
-        { session },
+        session,
       );
 
       await appendContentAudit(session, {
@@ -748,19 +752,7 @@ export async function cancelScheduledLessonVersion(
 ) {
   await requirePermission(actorUserId, "CONTENT_PUBLISH");
   await connectMongoose();
-  const version = await LessonVersion.findOneAndUpdate(
-    { _id: toObjectId(versionId), status: "SCHEDULED" },
-    {
-      $set: {
-        status: "APPROVED",
-        scheduledAt: null,
-        scheduledTimezone: null,
-        scheduledOverrideReason: null,
-        scheduledBy: null,
-      },
-    },
-    { new: true },
-  );
+  const version = await cancelScheduledVersion(toObjectId(versionId));
   if (!version) throw new ContentConflictError("Version is not scheduled.");
 
   return { lessonVersionId: version.id, status: version.status };
@@ -810,7 +802,7 @@ async function publishVersion(
         throw new ContentConflictError("Approval is stale and the version must be reviewed again.");
       }
 
-      const lesson = await Lesson.findById(version.lessonId).session(session);
+      const lesson = await findLessonById(version.lessonId, session);
       if (!lesson) throw new ResourceNotFoundError();
       if (lesson.publicationStatus === "WITHDRAWN") {
         throw new ContentConflictError("Withdrawn lessons require a separate recovery review.");
@@ -824,11 +816,7 @@ async function publishVersion(
 
       const previousVersionId = lesson.currentPublishedVersionId;
       if (previousVersionId && !previousVersionId.equals(version._id)) {
-        await LessonVersion.updateOne(
-          { _id: previousVersionId, status: "PUBLISHED" },
-          { $set: { status: "SUPERSEDED", supersededAt: new Date() } },
-          { session },
-        );
+        await supersedeLessonVersion(previousVersionId, session);
       }
 
       const publishedAt = new Date();
@@ -937,20 +925,7 @@ export async function cancelLessonVersion(
 ) {
   await requirePermission(actorUserId, "CONTENT_DRAFT_EDIT");
   await connectMongoose();
-  const version = await LessonVersion.findOneAndUpdate(
-    {
-      _id: toObjectId(versionId),
-      status: { $in: ["DRAFT", "CHANGES_REQUESTED"] },
-    },
-    {
-      $set: {
-        status: "CANCELLED",
-        isActiveWorkflow: false,
-        cancelledAt: new Date(),
-      },
-    },
-    { new: true },
-  );
+  const version = await cancelLessonVersionWorkflow(toObjectId(versionId));
   if (!version) throw new ContentConflictError("Only editable versions can be cancelled.");
 
   return { lessonVersionId: version.id, status: version.status };
@@ -1089,11 +1064,7 @@ export async function rollbackLesson(
       await validateReferences(content, session, lesson._id);
 
       const previousVersionId = lesson.currentPublishedVersionId;
-      await LessonVersion.updateOne(
-        { _id: previousVersionId },
-        { $set: { status: "SUPERSEDED", supersededAt: new Date() } },
-        { session },
-      );
+      await supersedeLessonVersionForRollback(previousVersionId, session);
       targetVersion.set({ status: "PUBLISHED", supersededAt: null });
       await targetVersion.save({ session });
 

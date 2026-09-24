@@ -690,11 +690,8 @@ export function LearningLibrary({
                 </div>
                 <CardTitle className="font-heading text-base font-bold">Chưa có bộ quiz nào</CardTitle>
                 <CardDescription className="mt-1 text-xs leading-relaxed">
-                  Tải lên file câu hỏi hoặc sử dụng bộ VSTEP Writing Templates có sẵn ở trên để bắt đầu luyện tập.
+                  Sử dụng bộ VSTEP Writing Templates có sẵn ở trên để bắt đầu luyện tập.
                 </CardDescription>
-                <Button asChild className="mt-4 rounded-xl text-xs font-bold" size="sm">
-                  <Link href="/dashboard/learning/import">Tải lên bộ quiz mới</Link>
-                </Button>
               </CardContent>
             </Card>
           )}

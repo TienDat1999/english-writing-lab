@@ -3,15 +3,14 @@ import {
   BookOpen01Icon,
   Clock01Icon,
   SparklesIcon,
-  Upload01Icon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
-import { auth } from "@/auth";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { getSession } from "@/server/auth/session";
 import {
   getLearningStats,
   listLearningItems,
@@ -22,7 +21,7 @@ import {
 import { LearningLibrary } from "./learning-library";
 
 export default async function LearningPage() {
-  const session = await auth();
+  const session = await getSession();
 
   if (!session?.user) {
     redirect("/login");
@@ -58,17 +57,11 @@ export default async function LearningPage() {
             Thư viện học của Bạn
           </h1>
           <p className="mt-0.5 text-xs sm:text-sm text-muted-foreground">
-            Các mẫu câu, từ vựng và chủ đề trích xuất từ bài viết hoặc bộ đề tự tải lên để ghi nhớ dài hạn.
+            Các mẫu câu, từ vựng và chủ đề trích xuất từ bài viết để ghi nhớ dài hạn.
           </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-2 shrink-0">
-          <Button asChild size="sm" variant="outline" className="h-9 text-xs font-semibold bg-white">
-            <Link href="/dashboard/learning/import" className="inline-flex items-center gap-1.5">
-              <HugeiconsIcon icon={Upload01Icon} size={14} />
-              <span>Tải lên quiz</span>
-            </Link>
-          </Button>
           <Button asChild size="sm" variant="outline" className="h-9 text-xs font-semibold bg-white">
             <Link href="/dashboard/review?mode=quick" className="inline-flex items-center gap-1.5">
               <HugeiconsIcon icon={Clock01Icon} size={14} />

@@ -3,9 +3,9 @@ import { redirect } from "next/navigation";
 import { ArrowLeft01Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 
-import { auth } from "@/auth";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { getSession } from "@/server/auth/session";
 import {
   listDueLearningItems,
   listQuickLearningItems,
@@ -24,7 +24,7 @@ type ReviewPageProps = {
 };
 
 export default async function ReviewPage({ searchParams }: ReviewPageProps) {
-  const session = await auth();
+  const session = await getSession();
 
   if (!session?.user) {
     redirect("/login");

@@ -9,9 +9,9 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
-import { auth } from "@/auth";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { getSession } from "@/server/auth/session";
 import { getPublicLessonDetail } from "@/server/content/public-content.service";
 
 import { LessonPreviewQuiz } from "./lesson-preview-quiz";
@@ -31,7 +31,7 @@ const lessonTypeLabels: Record<string, string> = {
 
 export default async function PublicLessonDetailPage({ params }: LessonDetailPageProps) {
   const { slug } = await params;
-  const session = await auth();
+  const sessionPromise = getSession();
 
   let lessonDetail: Awaited<ReturnType<typeof getPublicLessonDetail>> | null = null;
   try {
@@ -44,6 +44,7 @@ export default async function PublicLessonDetailPage({ params }: LessonDetailPag
     notFound();
   }
 
+  const session = await sessionPromise;
   const isLoggedIn = !!session?.user;
   const collection = lessonDetail.collection;
   const backHref = collection ? `/lessons/collection/${collection.slug}` : "/lessons";

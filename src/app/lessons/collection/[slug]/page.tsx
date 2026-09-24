@@ -8,8 +8,8 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
-import { auth } from "@/auth";
 import { Button } from "@/components/ui/button";
+import { getSession } from "@/server/auth/session";
 import { getPublicCollectionDetail } from "@/server/content/public-content.service";
 import { EnrollCollectionButton } from "./enroll-collection-button";
 
@@ -19,7 +19,7 @@ export default async function PublicCollectionDetailPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const session = await auth();
+  const sessionPromise = getSession();
 
   let collectionDetail: Awaited<ReturnType<typeof getPublicCollectionDetail>> | null = null;
   try {
@@ -35,6 +35,7 @@ export default async function PublicCollectionDetailPage({
     notFound();
   }
 
+  const session = await sessionPromise;
   const isLoggedIn = !!session?.user;
 
   return (

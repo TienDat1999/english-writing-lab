@@ -12,7 +12,6 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 
-import { auth } from "@/auth";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -23,6 +22,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { getSession } from "@/server/auth/session";
 import { ResourceNotFoundError } from "@/server/http/errors";
 import { getSubmissionDetail } from "@/server/submissions/submission.service";
 
@@ -64,7 +64,7 @@ type SubmissionPageProps = {
 };
 
 export default async function SubmissionPage({ params }: SubmissionPageProps) {
-  const session = await auth();
+  const session = await getSession();
 
   if (!session?.user) {
     redirect("/login");

@@ -54,6 +54,7 @@ const learningItemSchema = new Schema(
 
 learningItemSchema.index({ userId: 1, fingerprint: 1 }, { unique: true });
 learningItemSchema.index({ userId: 1, nextReviewAt: 1, deletedAt: 1 });
+learningItemSchema.index({ userId: 1, sourceSubmissionId: 1 });
 learningItemSchema.index({ userId: 1, deletedAt: 1, sourceType: 1, nextReviewAt: 1, createdAt: -1 });
 learningItemSchema.index({ userId: 1, deletedAt: 1, sourceType: 1, quizType: 1, topicText: 1 });
 learningItemSchema.index({ userId: 1, deletedAt: 1, sourceType: 1, title: 1, promptText: 1 });

@@ -1,15 +1,19 @@
 "use client";
 
 import {
+  AlertCircleIcon,
   ArrowLeft01Icon,
   ArrowRight01Icon,
+  BookOpen01Icon,
+  CheckmarkCircle02Icon,
   Idea01Icon,
+  SparklesIcon,
   VolumeHighIcon,
   VolumeLowIcon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -23,12 +27,23 @@ type LearningStage = "RECOGNITION" | "TRANSLATION" | "APPLICATION";
 type ApplicationEvaluation = {
   feedbackVi: string;
   correctedTranslation: string;
+  upgradedTranslation?: string;
   grammarScore: number;
   meaningScore: number;
   grammarIssues: Array<{
     sourceQuote: string;
     correction: string;
     explanationVi: string;
+  }>;
+  vocabularyUpgrades?: Array<{
+    originalWord: string;
+    upgradedAlternatives: string;
+    reasonVi: string;
+  }>;
+  writingAlternatives?: Array<{
+    label: string;
+    sentenceEn: string;
+    noteVi?: string;
   }>;
 };
 
@@ -461,19 +476,22 @@ function StepQuestion({
     };
   }, [applicationPrompt, isApplication, item.id, promptRequestKey]);
 
+  const lastCheckedAtRef = useRef<number>(0);
+
   async function checkAnswer(selectedAnswer = answer) {
-    if (!selectedAnswer.trim() || isCorrect !== null || isChecking) return;
+    const trimmed = selectedAnswer.trim();
+    if (!trimmed || isCorrect !== null || isChecking) return;
 
     if (isApplication) {
       setIsChecking(true);
       setCheckingError(null);
-      setAnswer(selectedAnswer);
+      setAnswer(trimmed);
 
       try {
         const response = await fetch(`/api/learning-items/${item.id}/application/evaluate`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ learnerAnswer: selectedAnswer }),
+          body: JSON.stringify({ learnerAnswer: trimmed }),
         });
 
         if (!response.ok) throw new Error("APPLICATION_EVALUATION_FAILED");
@@ -484,6 +502,7 @@ function StepQuestion({
             usesRequiredPhrase: boolean;
           };
         };
+        lastCheckedAtRef.current = Date.now();
         setApplicationEvaluation(payload.data.evaluation);
         setIsCorrect(payload.data.isCorrect);
       } catch {
@@ -495,27 +514,51 @@ function StepQuestion({
     }
 
     const correct = isRecognition
-      ? cleanMeaningText(selectedAnswer) === cleanedPrompt
-      : normalizeAnswer(selectedAnswer) === normalizeAnswer(item.answerText);
-    setAnswer(selectedAnswer);
+      ? cleanMeaningText(trimmed) === cleanedPrompt
+      : normalizeAnswer(trimmed) === normalizeAnswer(item.answerText);
+    lastCheckedAtRef.current = Date.now();
+    setAnswer(trimmed);
     setIsCorrect(correct);
   }
 
   function continueToNext() {
-    if (isCorrect === null) return;
+    if (isCorrect === null || saving || isChecking) return;
     onContinue(isCorrect);
   }
 
   useEffect(() => {
     function handleGlobalKeyDown(event: KeyboardEvent) {
-      if (event.key === "Enter" && !event.shiftKey && isCorrect !== null && !saving && !isChecking) {
+      const isEnter = event.key === "Enter" || event.code === "Enter" || event.code === "NumpadEnter";
+      if (!isEnter || event.shiftKey) return;
+      if (event.isComposing || event.keyCode === 229) return;
+
+      // When actively typing inside textarea, textarea's own onKeyDown takes precedence
+      if (event.target instanceof HTMLTextAreaElement) {
+        return;
+      }
+
+      if (isCorrect !== null) {
+        // Prevent accidental double-action: ensure at least 400ms passed since answer check
+        if (Date.now() - lastCheckedAtRef.current < 400) {
+          return;
+        }
+        if (!saving && !isChecking) {
+          event.preventDefault();
+          continueToNext();
+        }
+        return;
+      }
+
+      const trimmed = answer.trim();
+      if (!isRecognition && trimmed && !isChecking && (!isApplication || applicationPrompt)) {
         event.preventDefault();
-        onContinue(isCorrect);
+        lastCheckedAtRef.current = Date.now();
+        void checkAnswer(trimmed);
       }
     }
     window.addEventListener("keydown", handleGlobalKeyDown);
     return () => window.removeEventListener("keydown", handleGlobalKeyDown);
-  }, [isCorrect, saving, isChecking, onContinue]);
+  }, [isCorrect, saving, isChecking, onContinue, isRecognition, answer, isApplication, applicationPrompt]);
 
   return (
     <Card className="border-t-4 border-t-primary bg-card shadow-[0_18px_40px_rgb(35_87_170/12%)]">
@@ -608,14 +651,23 @@ function StepQuestion({
               disabled={isCorrect !== null || isChecking}
               onChange={(event) => setAnswer(event.target.value)}
               onKeyDown={(event) => {
-                if (event.key === "Enter" && !event.shiftKey) {
+                if (event.nativeEvent?.isComposing || event.keyCode === 229) {
+                  return;
+                }
+                const isEnter = event.key === "Enter" || event.code === "Enter" || event.code === "NumpadEnter";
+                if (isEnter && !event.shiftKey) {
                   event.preventDefault();
+                  event.stopPropagation();
                   if (isCorrect === null) {
-                    if (answer.trim() && !isChecking && (!isApplication || applicationPrompt)) {
-                      void checkAnswer();
+                    const currentVal = (event.currentTarget as HTMLTextAreaElement).value.trim() || answer.trim();
+                    if (currentVal && !isChecking && (!isApplication || applicationPrompt)) {
+                      lastCheckedAtRef.current = Date.now();
+                      void checkAnswer(currentVal);
                     }
-                  } else if (!saving && !isChecking) {
-                    continueToNext();
+                  } else {
+                    if (Date.now() - lastCheckedAtRef.current >= 400 && !saving && !isChecking) {
+                      continueToNext();
+                    }
                   }
                 }
               }}
@@ -632,71 +684,321 @@ function StepQuestion({
             <Button
               className="w-full rounded-full"
               disabled={!answer.trim() || isChecking || (isApplication && !applicationPrompt)}
-              onClick={() => void checkAnswer()}
+              onClick={() => {
+                lastCheckedAtRef.current = Date.now();
+                void checkAnswer(answer.trim());
+              }}
               size="lg"
             >
               {isChecking ? "Đang kiểm tra câu..." : "Kiểm tra đáp án"}
             </Button>
           ) : null
+        ) : isApplication && applicationEvaluation ? (
+          <div className="space-y-3">
+            <ApplicationFeedbackView
+              isCorrect={isCorrect}
+              evaluation={applicationEvaluation}
+              requiredPhrase={item.answerText}
+            />
+            <div className="flex justify-end pt-1">
+              <Button
+                className="rounded-full px-5 font-semibold gap-2 shadow-sm"
+                disabled={saving || isChecking}
+                onClick={continueToNext}
+                size="default"
+              >
+                <span>{saving ? "Đang lưu..." : "Câu tiếp theo"}</span>
+                <kbd className="hidden sm:inline-block rounded bg-primary-foreground/20 px-1.5 py-0.5 text-[10px] font-mono leading-none">
+                  ↵
+                </kbd>
+                <HugeiconsIcon icon={ArrowRight01Icon} strokeWidth={2} size={15} />
+              </Button>
+            </div>
+          </div>
         ) : (
-          <div className={isCorrect
-              ? "rounded-xl border border-emerald-200 bg-emerald-50 p-3"
-              : "rounded-xl border border-rose-200 bg-rose-50 p-3"}
-          >
-            <p className={`font-bold ${isCorrect ? "text-emerald-700" : "text-rose-700"}`}>
-              {isCorrect ? "Chính xác ✓" : "Chưa đúng rồi"}
-            </p>
-            {!isCorrect ? (
-              <>
-                <p className="mt-2 text-sm text-slate-600">
-                  {isRecognition ? "Nghĩa đúng" : isApplication ? "Câu cần sử dụng cụm từ" : "Đáp án đúng"}
+          <div className="space-y-3">
+            <div className={isCorrect
+                ? "rounded-xl border border-emerald-200 bg-emerald-50 p-4"
+                : "rounded-xl border border-rose-200 bg-rose-50 p-4"}
+            >
+              <div className="flex items-center gap-2">
+                <HugeiconsIcon
+                  icon={isCorrect ? CheckmarkCircle02Icon : AlertCircleIcon}
+                  size={20}
+                  className={isCorrect ? "text-emerald-600" : "text-rose-600"}
+                />
+                <p className={`font-bold text-base ${isCorrect ? "text-emerald-700" : "text-rose-700"}`}>
+                  {isCorrect ? "Chính xác ✓" : "Chưa đúng rồi"}
                 </p>
-                <p className="mt-1 text-xl font-bold text-slate-950">
-                  {isRecognition ? cleanedPrompt : item.answerText}
-                </p>
-                {!isRecognition && !isApplication ? (
-                  <div className="mt-3"><PronunciationControls text={item.answerText} /></div>
-                ) : null}
-                {isApplication && applicationEvaluation ? (
-                  <p className="mt-2 leading-6 text-slate-700">{applicationEvaluation.feedbackVi}</p>
-                ) : null}
-                {!isApplication ? (
-                  <p className="mt-2 text-sm font-medium text-rose-700">
+              </div>
+              {!isCorrect ? (
+                <>
+                  <p className="mt-3 text-xs font-semibold uppercase tracking-wider text-slate-500">
+                    {isRecognition ? "Nghĩa đúng" : "Đáp án đúng"}
+                  </p>
+                  <p className="mt-1 text-lg font-bold text-slate-950">
+                    {isRecognition ? cleanedPrompt : item.answerText}
+                  </p>
+                  {!isRecognition ? (
+                    <div className="mt-3"><PronunciationControls text={item.answerText} /></div>
+                  ) : null}
+                  <p className="mt-2 text-xs font-medium text-rose-700">
                     Từ này sẽ xuất hiện lại sau khi bạn đi hết vòng hiện tại.
                   </p>
-                ) : null}
-              </>
-            ) : isApplication ? (
-              <p className="mt-2 leading-7 text-slate-700">{applicationEvaluation?.feedbackVi}</p>
-            ) : null}
-            {!isCorrect && isApplication && applicationEvaluation ? (
-              <>
-                {applicationEvaluation.grammarIssues.length > 0 ? (
-                  <div className="mt-3 space-y-2">
-                    <p className="text-sm font-semibold text-slate-700">Các lỗi cần sửa</p>
-                    {applicationEvaluation.grammarIssues.map((issue) => (
-                      <div className="rounded-lg border border-rose-200 bg-white/65 px-3 py-2" key={`${issue.sourceQuote}:${issue.correction}`}>
-                        <p className="text-sm">
-                          <span className="text-rose-700 line-through">{issue.sourceQuote}</span>
-                          <span className="mx-2 text-slate-400">→</span>
-                          <span className="font-semibold text-emerald-700">{issue.correction}</span>
-                        </p>
-                        <p className="mt-1 text-sm leading-5 text-slate-600">{issue.explanationVi}</p>
-                      </div>
-                    ))}
-                  </div>
-                ) : null}
-                <p className="mt-2 text-sm font-semibold text-slate-600">Câu sửa sát nghĩa</p>
-                <p className="mt-1 leading-7 text-slate-900">{applicationEvaluation.correctedTranslation}</p>
-                <p className="mt-2 text-xs text-rose-700">
-                  Ngữ pháp {applicationEvaluation.grammarScore}/100 · Đúng ý {applicationEvaluation.meaningScore}/100
-                </p>
-              </>
-            ) : null}
+                </>
+              ) : null}
+            </div>
+            <div className="flex justify-end pt-1">
+              <Button
+                className="rounded-full px-5 font-semibold gap-2 shadow-sm"
+                disabled={saving || isChecking}
+                onClick={continueToNext}
+                size="default"
+              >
+                <span>{saving ? "Đang lưu..." : "Câu tiếp theo"}</span>
+                <kbd className="hidden sm:inline-block rounded bg-primary-foreground/20 px-1.5 py-0.5 text-[10px] font-mono leading-none">
+                  ↵
+                </kbd>
+                <HugeiconsIcon icon={ArrowRight01Icon} strokeWidth={2} size={15} />
+              </Button>
+            </div>
           </div>
         )}
         {checkingError ? <p className="text-sm text-destructive" role="alert">{checkingError}</p> : null}
       </CardContent>
     </Card>
+  );
+}
+
+function ApplicationFeedbackView({
+  isCorrect,
+  evaluation,
+  requiredPhrase,
+}: {
+  isCorrect: boolean;
+  evaluation: ApplicationEvaluation;
+  requiredPhrase: string;
+}) {
+  const grammarIssues = evaluation.grammarIssues || [];
+  const vocabularyUpgrades = evaluation.vocabularyUpgrades || [];
+
+  return (
+    <div
+      className={
+        isCorrect
+          ? "rounded-2xl border border-emerald-200/90 bg-emerald-50/40 p-4 sm:p-5 space-y-4 text-slate-900 shadow-2xs"
+          : "rounded-2xl border border-rose-200/90 bg-rose-50/40 p-4 sm:p-5 space-y-4 text-slate-900 shadow-2xs"
+      }
+    >
+      {/* Header: Status + Scores */}
+      <div className="flex flex-wrap items-center justify-between gap-2.5 pb-0.5">
+        <div className="flex items-center gap-2">
+          <HugeiconsIcon
+            icon={isCorrect ? CheckmarkCircle02Icon : AlertCircleIcon}
+            size={22}
+            className={isCorrect ? "text-emerald-600" : "text-rose-600"}
+          />
+          <span
+            className={`text-base font-bold tracking-tight ${
+              isCorrect ? "text-emerald-800" : "text-rose-800"
+            }`}
+          >
+            {isCorrect ? "Chính xác ✓" : "Cần hoàn thiện thêm"}
+          </span>
+        </div>
+
+        {/* Score Badges */}
+        <div className="flex items-center gap-2">
+          <span
+            className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold border ${
+              evaluation.grammarScore >= 70
+                ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                : "bg-rose-50 text-rose-700 border-rose-200"
+            }`}
+          >
+            Ngữ pháp: {evaluation.grammarScore}/100
+          </span>
+          <span
+            className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold border ${
+              evaluation.meaningScore >= 70
+                ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                : "bg-rose-50 text-rose-700 border-rose-200"
+            }`}
+          >
+            Đúng ý: {evaluation.meaningScore}/100
+          </span>
+        </div>
+      </div>
+
+      {/* Target Phrase */}
+      <div className="flex items-center gap-2 text-xs text-slate-600 bg-white/80 rounded-xl px-3 py-2 border border-slate-200/70 shadow-2xs">
+        <span className="font-medium text-slate-500">Cụm từ yêu cầu:</span>
+        <span className="font-bold text-slate-900 font-mono text-xs sm:text-sm">
+          {requiredPhrase}
+        </span>
+      </div>
+
+      {/* Overall Feedback */}
+      <div className="rounded-xl bg-white/90 border border-slate-200/80 p-3 sm:p-3.5 shadow-2xs">
+        <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1">
+          Nhận xét chung
+        </p>
+        <p className="text-sm font-medium text-slate-800 leading-relaxed">
+          {evaluation.feedbackVi}
+        </p>
+      </div>
+
+      {/* Section 1: Grammar Feedback */}
+      <div className="space-y-2">
+        <div className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-slate-600">
+          <HugeiconsIcon icon={AlertCircleIcon} size={15} className="text-slate-500" />
+          <span>
+            Nhận xét Ngữ pháp &amp; Chính tả
+            {grammarIssues.length > 0 ? ` (${grammarIssues.length})` : ""}
+          </span>
+        </div>
+
+        {grammarIssues.length > 0 ? (
+          <div className="space-y-2">
+            {grammarIssues.map((issue, idx) => (
+              <div
+                key={`${issue.sourceQuote}-${idx}`}
+                className="rounded-xl border border-rose-200/90 bg-white p-3 text-xs space-y-1 shadow-2xs"
+              >
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <span className="line-through decoration-rose-400 text-rose-700 font-semibold text-xs sm:text-sm">
+                    {issue.sourceQuote}
+                  </span>
+                  <span className="text-slate-400">→</span>
+                  <span className="font-bold text-emerald-700 text-xs sm:text-sm">
+                    {issue.correction}
+                  </span>
+                </div>
+                <p className="text-slate-600 leading-relaxed text-xs">
+                  {issue.explanationVi}
+                </p>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="rounded-xl border border-emerald-200/80 bg-white/90 px-3 py-2.5 text-xs flex items-center gap-2 text-emerald-800 shadow-2xs">
+            <HugeiconsIcon icon={CheckmarkCircle02Icon} size={16} className="text-emerald-600 shrink-0" />
+            <span className="font-medium">
+              Ngữ pháp và chính tả câu viết đạt chuẩn, không có lỗi sai cấu trúc.
+            </span>
+          </div>
+        )}
+      </div>
+
+      {/* Section 2: Vocabulary / Word Choice Feedback */}
+      <div className="space-y-2">
+        <div className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-slate-600">
+          <HugeiconsIcon icon={BookOpen01Icon} size={15} className="text-slate-500" />
+          <span>
+            Nhận xét Cách dùng từ &amp; Diễn đạt
+            {vocabularyUpgrades.length > 0 ? ` (${vocabularyUpgrades.length})` : ""}
+          </span>
+        </div>
+
+        {vocabularyUpgrades.length > 0 ? (
+          <div className="space-y-2">
+            {vocabularyUpgrades.map((upgrade, idx) => (
+              <div
+                key={`${upgrade.originalWord}-${idx}`}
+                className="rounded-xl border border-amber-200/80 bg-white p-3 text-xs space-y-1.5 shadow-2xs"
+              >
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-slate-500 font-medium text-xs">Từ hiện tại:</span>
+                  <span className="rounded-md bg-amber-50 px-2 py-0.5 font-semibold text-amber-900 border border-amber-200/80 text-xs sm:text-sm">
+                    {upgrade.originalWord}
+                  </span>
+                  <span className="text-slate-400 text-xs">→ Gợi ý nâng cấp:</span>
+                  <span className="rounded-md bg-indigo-50 px-2 py-0.5 font-bold text-indigo-700 border border-indigo-200/80 text-xs sm:text-sm">
+                    {upgrade.upgradedAlternatives}
+                  </span>
+                </div>
+                <p className="text-slate-600 leading-relaxed text-xs">
+                  {upgrade.reasonVi}
+                </p>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="rounded-xl border border-slate-200/80 bg-white/90 px-3 py-2.5 text-xs flex items-center gap-2 text-slate-700 shadow-2xs">
+            <HugeiconsIcon icon={CheckmarkCircle02Icon} size={16} className="text-emerald-600 shrink-0" />
+            <span className="font-medium">
+              Từ vựng sử dụng tự nhiên, diễn đạt rõ nghĩa và phù hợp với ngữ cảnh.
+            </span>
+          </div>
+        )}
+      </div>
+
+      {/* Section 3: Writing Alternatives */}
+      <WritingAlternativesSection evaluation={evaluation} />
+    </div>
+  );
+}
+
+function WritingAlternativesSection({
+  evaluation,
+}: {
+  evaluation: ApplicationEvaluation;
+}) {
+  const alternatives = (evaluation.writingAlternatives && evaluation.writingAlternatives.length > 0)
+    ? evaluation.writingAlternatives
+    : [
+        {
+          label: "Bám sát cấu trúc gốc nhưng gãy gọn hơn:",
+          sentenceEn: evaluation.correctedTranslation,
+          noteVi: "",
+        },
+        ...(evaluation.upgradedTranslation && evaluation.upgradedTranslation !== evaluation.correctedTranslation
+          ? [
+              {
+                label: "Trang trọng hơn (phù hợp với biên bản họp, văn bản quản lý):",
+                sentenceEn: evaluation.upgradedTranslation,
+                noteVi: "",
+              },
+            ]
+          : []),
+      ];
+
+  if (alternatives.length === 0) return null;
+
+  return (
+    <div className="rounded-2xl border border-slate-200/90 bg-white p-4 sm:p-5 shadow-2xs space-y-3.5">
+      <div className="flex items-center gap-2 text-slate-900">
+        <HugeiconsIcon icon={SparklesIcon} size={18} className="text-amber-500 shrink-0" />
+        <h4 className="font-bold text-sm sm:text-base tracking-tight text-slate-900">
+          Các cách viết tự nhiên &amp; chuyên nghiệp hơn
+        </h4>
+      </div>
+
+      <div className="space-y-3">
+        {alternatives.map((alt, idx) => (
+          <div
+            key={idx}
+            className="rounded-xl bg-slate-50/80 border border-slate-200/70 p-3 sm:p-3.5 space-y-1.5"
+          >
+            <div className="flex items-center gap-2">
+              <span className="inline-block w-1.5 h-1.5 rounded-full bg-indigo-500 shrink-0" />
+              <p className="text-xs sm:text-sm font-semibold text-slate-800 leading-snug">
+                {alt.label}
+              </p>
+            </div>
+            <div className="ml-3.5 border-l-2 border-indigo-400/80 pl-3 py-1 space-y-1">
+              <p className="font-medium text-xs sm:text-sm text-slate-950 leading-relaxed select-all">
+                &ldquo;{alt.sentenceEn}&rdquo;
+              </p>
+              {alt.noteVi ? (
+                <p className="text-xs text-slate-500 leading-relaxed italic">
+                  {alt.noteVi.startsWith("(") ? alt.noteVi : `(${alt.noteVi})`}
+                </p>
+              ) : null}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
   );
 }

@@ -2,10 +2,7 @@ import { requireUser } from "@/server/auth/session";
 import { errorResponse } from "@/server/http/errors";
 import { getParaphraseApplicationPrompt } from "@/server/learning/learning.service";
 
-export async function POST(
-  _request: Request,
-  context: { params: Promise<{ id: string }> },
-) {
+async function handlePrompt(context: { params: Promise<{ id: string }> }) {
   try {
     const user = await requireUser();
     const { id } = await context.params;
@@ -16,3 +13,18 @@ export async function POST(
     return errorResponse(error);
   }
 }
+
+export async function GET(
+  _request: Request,
+  context: { params: Promise<{ id: string }> },
+) {
+  return handlePrompt(context);
+}
+
+export async function POST(
+  _request: Request,
+  context: { params: Promise<{ id: string }> },
+) {
+  return handlePrompt(context);
+}
+

@@ -1,12 +1,13 @@
-import { auth, signOut } from "@/auth";
+import { signOut } from "@/auth";
 import { DashboardHeader } from "@/components/dashboard-header";
+import { getSession } from "@/server/auth/session";
 
 export default async function LessonsLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const session = await auth();
+  const session = await getSession();
 
   async function signOutAction() {
     "use server";
