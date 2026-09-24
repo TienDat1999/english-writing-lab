@@ -32,6 +32,13 @@ export type DashboardOverview = {
   focusWeaknesses: string[];
   recentStrengths: string[];
   lastAnalyzedSubmissionId: string | null;
+  lastAnalyzedSubmission: {
+    id: string;
+    taskType: "TASK_1" | "TASK_2";
+    band: number | null;
+    submittedAt: Date;
+    promptText?: string;
+  } | null;
 };
 
 export async function getDashboardOverview(userId: string): Promise<DashboardOverview> {
@@ -49,6 +56,9 @@ export async function getDashboardOverview(userId: string): Promise<DashboardOve
     })
       .sort({ createdAt: -1 })
       .select({
+        taskType: 1,
+        promptText: 1,
+        createdAt: 1,
         "analysis.estimatedOverallBand": 1,
         "analysis.structuralWeaknesses": 1,
         "analysis.strengths": 1,
@@ -61,6 +71,15 @@ export async function getDashboardOverview(userId: string): Promise<DashboardOve
   const focusWeaknesses = latestCompletedSubmission?.analysis?.structuralWeaknesses ?? [];
   const recentStrengths = latestCompletedSubmission?.analysis?.strengths ?? [];
   const lastAnalyzedSubmissionId = latestCompletedSubmission?._id?.toString() ?? null;
+  const lastAnalyzedSubmission = latestCompletedSubmission
+    ? {
+        id: latestCompletedSubmission._id.toString(),
+        taskType: ((latestCompletedSubmission as { taskType?: "TASK_1" | "TASK_2" }).taskType ?? "TASK_2") as "TASK_1" | "TASK_2",
+        band: latestCompletedSubmission.analysis?.estimatedOverallBand ?? null,
+        submittedAt: (latestCompletedSubmission as { createdAt: Date }).createdAt,
+        promptText: (latestCompletedSubmission as { promptText?: string }).promptText,
+      }
+    : null;
 
   const masteryRate =
     learningStats.total > 0
@@ -113,5 +132,6 @@ export async function getDashboardOverview(userId: string): Promise<DashboardOve
     focusWeaknesses,
     recentStrengths,
     lastAnalyzedSubmissionId,
+    lastAnalyzedSubmission,
   };
 }
