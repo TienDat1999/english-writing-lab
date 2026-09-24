@@ -19,7 +19,6 @@ import {
   Card,
   CardContent,
   CardDescription,
-  CardHeader,
   CardTitle,
 } from "@/components/ui/card";
 import { getSession } from "@/server/auth/session";
@@ -27,11 +26,12 @@ import { ResourceNotFoundError } from "@/server/http/errors";
 import { getSubmissionDetail } from "@/server/submissions/submission.service";
 
 import { CopyButton } from "./copy-button";
+import { GrammarCorrectionCard } from "./grammar-correction-card";
 import { RetryAnalysisButton } from "./retry-analysis-button";
 import { RewrittenEssayViewer } from "./rewritten-essay-viewer";
-import { SaveLearningButton } from "./save-learning-button";
 import { SectionNav } from "./section-nav";
 import { StatusPoller } from "./status-poller";
+import { VocabularyUpgradeCard } from "./vocabulary-upgrade-card";
 
 const criteriaConfig = {
   taskResponse: {
@@ -333,83 +333,95 @@ export default async function SubmissionPage({ params }: SubmissionPageProps) {
               </div>
             </div>
 
-            {/* PHẦN 2: ƯU ĐIỂM & ĐIỂM CẦN CẢI THIỆN (2 CỘT CÂN ĐỐI) */}
-            <div className="grid gap-6 lg:grid-cols-2">
-              {/* Điểm sáng ghi điểm */}
-              <div className="rounded-2xl border border-emerald-200/90 bg-gradient-to-b from-emerald-50/50 via-white to-white p-6 shadow-sm">
-                <div className="flex items-center gap-2.5 text-emerald-800 mb-4 pb-3 border-b border-emerald-100">
-                  <div className="flex size-9 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700">
-                    <HugeiconsIcon icon={CheckmarkCircle02Icon} size={20} />
-                  </div>
-                  <div>
-                    <h3 className="font-heading text-base font-bold text-slate-900">
-                      Điểm sáng ghi điểm (Strengths)
-                    </h3>
-                    <p className="text-xs text-emerald-700 font-medium">
-                      Những khía cạnh bài viết đã thực hiện tốt
-                    </p>
-                  </div>
+            {/* PHẦN 2: ƯU ĐIỂM & ĐIỂM CẦN CẢI THIỆN (UNIFIED EXECUTIVE SUMMARY) */}
+            <div className="rounded-2xl border border-slate-200/90 bg-white p-6 shadow-xs">
+              <div className="flex flex-col gap-1 pb-5 border-b border-slate-100">
+                <div className="flex items-center gap-2">
+                  <span className="flex size-7 items-center justify-center rounded-lg bg-sky-50 text-sky-700 font-bold text-xs">
+                    ✦
+                  </span>
+                  <h3 className="font-heading text-lg font-bold text-slate-900">
+                    Đánh giá tổng quan (Executive Takeaways)
+                  </h3>
                 </div>
-
-                <div className="space-y-2.5">
-                  {submission.analysis.strengths.length > 0 ? (
-                    submission.analysis.strengths.map((strength, idx) => (
-                      <div
-                        key={idx}
-                        className="flex items-start gap-2.5 rounded-xl border border-emerald-100/80 bg-white p-3.5 shadow-2xs"
-                      >
-                        <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-700 text-xs font-bold mt-0.5">
-                          ✓
-                        </span>
-                        <p className="text-sm font-medium leading-relaxed text-slate-800">
-                          {strength}
-                        </p>
-                      </div>
-                    ))
-                  ) : (
-                    <p className="text-xs text-muted-foreground italic">
-                      Cần cải thiện thêm các luận điểm cơ bản.
-                    </p>
-                  )}
-                </div>
+                <p className="text-xs text-muted-foreground">
+                  Tổng hợp điểm sáng nổi bật và các trọng tâm cần ưu tiên khắc phục để bứt phá band điểm.
+                </p>
               </div>
 
-              {/* Điểm yếu cần ưu tiên khắc phục */}
-              <div className="rounded-2xl border border-amber-200/90 bg-gradient-to-b from-amber-50/50 via-white to-white p-6 shadow-sm">
-                <div className="flex items-center gap-2.5 text-amber-800 mb-4 pb-3 border-b border-amber-100">
-                  <div className="flex size-9 items-center justify-center rounded-xl bg-amber-100 text-amber-700">
-                    <HugeiconsIcon icon={AlertCircleIcon} size={20} />
+              <div className="grid gap-6 pt-5 md:grid-cols-2 md:divide-x md:divide-slate-100">
+                {/* Cột 1: Điểm sáng ghi điểm */}
+                <div className="space-y-3.5 md:pr-6">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="flex size-6 items-center justify-center rounded-md bg-emerald-100 text-emerald-700">
+                        <HugeiconsIcon icon={CheckmarkCircle02Icon} size={14} />
+                      </div>
+                      <span className="font-heading text-sm font-bold text-emerald-950">
+                        Điểm sáng ghi điểm (Strengths)
+                      </span>
+                    </div>
+                    <Badge variant="outline" className="border-emerald-200 bg-emerald-50 text-[10px] font-semibold text-emerald-700">
+                      {submission.analysis.strengths.length} điểm
+                    </Badge>
                   </div>
-                  <div>
-                    <h3 className="font-heading text-base font-bold text-slate-900">
-                      Cần ưu tiên khắc phục (Weaknesses)
-                    </h3>
-                    <p className="text-xs text-amber-700 font-medium">
-                      Các vị trí luận điểm còn liệt kê ý hoặc làm giảm độ thuyết phục
-                    </p>
+
+                  <div className="space-y-2.5">
+                    {submission.analysis.strengths.length > 0 ? (
+                      submission.analysis.strengths.map((strength, idx) => (
+                        <div
+                          key={idx}
+                          className="flex items-start gap-3 rounded-xl border border-emerald-100/70 bg-emerald-50/30 p-3 text-sm leading-relaxed text-slate-700"
+                        >
+                          <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-[11px] font-bold text-emerald-700 mt-0.5">
+                            ✓
+                          </span>
+                          <span className="font-medium text-slate-800">{strength}</span>
+                        </div>
+                      ))
+                    ) : (
+                      <p className="text-xs text-muted-foreground italic">
+                        Cần cải thiện thêm các luận điểm cơ bản.
+                      </p>
+                    )}
                   </div>
                 </div>
 
-                <div className="space-y-2.5">
-                  {submission.analysis.structuralWeaknesses.length > 0 ? (
-                    submission.analysis.structuralWeaknesses.map((weakness, idx) => (
-                      <div
-                        key={idx}
-                        className="flex items-start gap-2.5 rounded-xl border border-amber-100/80 bg-white p-3.5 shadow-2xs"
-                      >
-                        <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-amber-100 text-amber-800 text-xs font-bold mt-0.5">
-                          {idx + 1}
-                        </span>
-                        <p className="text-sm font-medium leading-relaxed text-slate-800">
-                          {weakness}
-                        </p>
+                {/* Cột 2: Điểm yếu cần khắc phục */}
+                <div className="space-y-3.5 md:pl-6">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="flex size-6 items-center justify-center rounded-md bg-amber-100 text-amber-700">
+                        <HugeiconsIcon icon={AlertCircleIcon} size={14} />
                       </div>
-                    ))
-                  ) : (
-                    <p className="text-xs text-muted-foreground italic">
-                      Không phát hiện điểm yếu cấu trúc nghiêm trọng.
-                    </p>
-                  )}
+                      <span className="font-heading text-sm font-bold text-amber-950">
+                        Trọng tâm cần khắc phục (Weaknesses)
+                      </span>
+                    </div>
+                    <Badge variant="outline" className="border-amber-200 bg-amber-50 text-[10px] font-semibold text-amber-700">
+                      {submission.analysis.structuralWeaknesses.length} điểm
+                    </Badge>
+                  </div>
+
+                  <div className="space-y-2.5">
+                    {submission.analysis.structuralWeaknesses.length > 0 ? (
+                      submission.analysis.structuralWeaknesses.map((weakness, idx) => (
+                        <div
+                          key={idx}
+                          className="flex items-start gap-3 rounded-xl border border-amber-100/70 bg-amber-50/30 p-3 text-sm leading-relaxed text-slate-700"
+                        >
+                          <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-amber-100 text-[11px] font-bold text-amber-800 mt-0.5">
+                            {idx + 1}
+                          </span>
+                          <span className="font-medium text-slate-800">{weakness}</span>
+                        </div>
+                      ))
+                    ) : (
+                      <p className="text-xs text-muted-foreground italic">
+                        Không phát hiện điểm yếu cấu trúc nghiêm trọng.
+                      </p>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
@@ -432,67 +444,17 @@ export default async function SubmissionPage({ params }: SubmissionPageProps) {
                 </div>
               </div>
 
-              <div className="grid gap-5 lg:grid-cols-2">
+              <div className="grid gap-4 md:grid-cols-2">
                 {submission.analysis.grammarCorrections.map((correction, index) => (
-                  <Card
+                  <GrammarCorrectionCard
                     key={index}
-                    className="flex flex-col justify-between rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden transition-all hover:border-slate-300 hover:shadow-md"
-                  >
-                    <CardHeader className="p-5 pb-3 space-y-3.5">
-                      <div className="flex items-center justify-between gap-2 border-b border-slate-100 pb-3">
-                        <span className="inline-flex items-center gap-1.5 text-xs font-bold text-rose-600">
-                          <span className="flex size-5 items-center justify-center rounded-full bg-rose-100 text-[11px]">
-                            {index + 1}
-                          </span>
-                          <span>Lỗi ngữ pháp #{index + 1}</span>
-                        </span>
-                        <div className="flex items-center gap-1">
-                          <CopyButton textToCopy={correction.correctionText} label="" size="icon" />
-                          <SaveLearningButton
-                            sourceIndex={index}
-                            sourceType="GRAMMAR"
-                            submissionId={submission.id}
-                          />
-                        </div>
-                      </div>
-
-                      {/* Câu lỗi ban đầu */}
-                      <div className="rounded-xl border border-rose-100 bg-rose-50/50 p-3.5 space-y-1">
-                        <p className="text-[10px] font-bold uppercase tracking-wider text-rose-600">
-                          Câu gốc của Bạn:
-                        </p>
-                        <p className="font-sans text-sm leading-relaxed text-slate-800">
-                          <span className="line-through decoration-rose-500 decoration-2 text-rose-900 font-medium">
-                            {correction.sourceQuote}
-                          </span>
-                        </p>
-                      </div>
-
-                      {/* Câu sửa chuẩn */}
-                      <div className="rounded-xl border border-emerald-100 bg-emerald-50/60 p-3.5 space-y-1">
-                        <p className="text-[10px] font-bold uppercase tracking-wider text-emerald-700">
-                          Cách viết chuẩn gợi ý:
-                        </p>
-                        <p className="font-sans text-sm font-semibold leading-relaxed text-emerald-950">
-                          {correction.correctionText}
-                        </p>
-                        {correction.correctionVi ? (
-                          <p className="pt-1 text-xs text-emerald-800 italic">
-                            &ldquo;{correction.correctionVi}&rdquo;
-                          </p>
-                        ) : null}
-                      </div>
-                    </CardHeader>
-
-                    {correction.explanationVi ? (
-                      <CardContent className="border-t border-slate-100 bg-slate-50/50 p-4">
-                        <div className="flex items-start gap-2 text-xs leading-relaxed text-slate-700">
-                          <span className="font-bold text-slate-900 shrink-0">💡 Quy tắc:</span>
-                          <span>{correction.explanationVi}</span>
-                        </div>
-                      </CardContent>
-                    ) : null}
-                  </Card>
+                    index={index}
+                    submissionId={submission.id}
+                    sourceQuote={correction.sourceQuote}
+                    correctionText={correction.correctionText}
+                    correctionVi={correction.correctionVi}
+                    explanationVi={correction.explanationVi}
+                  />
                 ))}
               </div>
             </section>
@@ -515,53 +477,16 @@ export default async function SubmissionPage({ params }: SubmissionPageProps) {
                 </div>
               </div>
 
-              <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {submission.analysis.vocabularyUpgrades.map((upgrade, index) => (
-                  <Card
+                  <VocabularyUpgradeCard
                     key={index}
-                    className="flex flex-col justify-between rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden transition-all hover:border-sky-300 hover:shadow-md"
-                  >
-                    <CardHeader className="p-5 pb-3 space-y-3">
-                      <div className="flex items-center justify-between gap-2 border-b border-slate-100 pb-2.5">
-                        <Badge variant="secondary" className="font-semibold text-[11px]">
-                          Cụm #{index + 1}
-                        </Badge>
-                        <div className="flex items-center gap-1">
-                          <CopyButton textToCopy={upgrade.upgradedExpression} label="" size="icon" />
-                          <SaveLearningButton
-                            sourceIndex={index}
-                            sourceType="VOCABULARY"
-                            submissionId={submission.id}
-                          />
-                        </div>
-                      </div>
-
-                      {/* Transformation Visual */}
-                      <div className="space-y-2">
-                        <div className="rounded-lg bg-slate-50 p-2 text-xs text-slate-500">
-                          <span className="text-[10px] uppercase font-bold text-slate-400 block mb-0.5">Từ gốc:</span>
-                          <span className="line-through">{upgrade.originalExpression}</span>
-                        </div>
-
-                        <div className="rounded-xl border border-sky-200 bg-gradient-to-r from-sky-50 to-blue-50/40 p-3">
-                          <div className="flex items-center gap-1 text-[10px] uppercase font-bold text-sky-700 mb-0.5">
-                            <HugeiconsIcon icon={SparklesIcon} size={12} />
-                            <span>Nâng cấp B2 tự nhiên:</span>
-                          </div>
-                          <p className="font-heading text-base font-bold text-sky-950">
-                            {upgrade.upgradedExpression}
-                          </p>
-                        </div>
-                      </div>
-                    </CardHeader>
-
-                    <CardContent className="border-t border-slate-100 bg-slate-50/50 p-4">
-                      <p className="text-xs text-slate-700">
-                        <strong className="text-slate-900 font-semibold">Nghĩa: </strong>
-                        {upgrade.meaningVi}
-                      </p>
-                    </CardContent>
-                  </Card>
+                    index={index}
+                    submissionId={submission.id}
+                    originalExpression={upgrade.originalExpression}
+                    upgradedExpression={upgrade.upgradedExpression}
+                    meaningVi={upgrade.meaningVi}
+                  />
                 ))}
               </div>
             </section>
