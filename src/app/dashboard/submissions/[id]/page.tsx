@@ -142,6 +142,11 @@ export default async function SubmissionPage({ params }: SubmissionPageProps) {
             <CardDescription className="text-sm leading-relaxed text-rose-900">
               Hệ thống tạm thời gặp sự cố khi kết nối với mô hình AI. Nội dung bài viết vẫn được giữ nguyên bản, Bạn có thể thử lại sau.
             </CardDescription>
+            {submission.failureReason ? (
+              <div className="mx-auto max-w-md rounded-lg border border-rose-300 bg-rose-100/70 p-2.5 text-xs text-rose-900 font-mono text-left">
+                <strong>Chi tiết:</strong> {submission.failureReason}
+              </div>
+            ) : null}
             <div className="mt-4 flex flex-wrap items-center justify-center gap-3">
               <RetryAnalysisButton submissionId={submission.id} />
               <Button asChild className="rounded-xl" size="sm" variant="outline">

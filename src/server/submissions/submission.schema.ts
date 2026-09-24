@@ -140,6 +140,7 @@ const submissionSchema = new Schema(
     processingLeaseUntil: { type: Date, default: null },
     analysis: { type: analysisSchema, default: null },
     failureCode: { type: String, default: null },
+    failureReason: { type: String, default: null },
     submittedAt: { type: Date, required: true },
     completedAt: { type: Date, default: null },
     deletedAt: { type: Date, default: null },

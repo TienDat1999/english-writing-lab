@@ -169,6 +169,7 @@ async function processAnalysis(
     }
   } catch (error) {
     const isFinalAttempt = run.attemptsMade + 1 >= run.maxAttempts;
+    const failureReason = error instanceof Error ? error.message : String(error);
 
     await Submission.updateOne(
       {
@@ -181,6 +182,7 @@ async function processAnalysis(
         $set: {
           status: isFinalAttempt ? "FAILED" : "QUEUED",
           failureCode: isFinalAttempt ? "ANALYSIS_FAILED" : null,
+          failureReason: isFinalAttempt ? failureReason : null,
           processingLeaseUntil: null,
         },
       },

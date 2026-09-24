@@ -101,12 +101,13 @@ export async function createSubmission(
       return { id: submission.id, status: "COMPLETED" as const };
     }
   } catch (error) {
-    console.error("Submission analysis failed:", error);
+    const failureReason = error instanceof Error ? error.message : String(error);
+    console.error("Submission analysis failed:", failureReason);
     await Submission.updateOne(
       { _id: submission._id, userId: ownerId },
-      { $set: { status: "FAILED", failureCode: "ANALYSIS_FAILED" } },
+      { $set: { status: "FAILED", failureCode: "ANALYSIS_FAILED", failureReason } },
     );
-    throw error;
+    return { id: submission.id, status: "FAILED" as const, failureReason };
   }
 }
 
@@ -151,10 +152,11 @@ export async function retrySubmissionAnalysis(
       return { id: submission.id, status: "COMPLETED" as const };
     }
   } catch (error) {
-    console.error("Submission retry analysis failed:", error);
+    const failureReason = error instanceof Error ? error.message : String(error);
+    console.error("Submission retry analysis failed:", failureReason);
     await Submission.updateOne(
       { _id: submission._id, userId: ownerId },
-      { $set: { status: "FAILED", failureCode: "ANALYSIS_FAILED" } },
+      { $set: { status: "FAILED", failureCode: "ANALYSIS_FAILED", failureReason } },
     );
     throw error;
   }
@@ -180,6 +182,7 @@ export type SubmissionDetail = {
   targetBand: number | null;
   status: SubmissionStatus;
   failureCode: string | null;
+  failureReason: string | null;
   submittedAt: Date;
   completedAt: Date | null;
   updatedAt: Date;
@@ -276,6 +279,7 @@ export async function getSubmissionDetail(
     targetBand: submission.targetBandSnapshot ?? null,
     status: submission.status as SubmissionStatus,
     failureCode: submission.failureCode ?? null,
+    failureReason: (submission as { failureReason?: string | null }).failureReason ?? null,
     submittedAt: submission.submittedAt,
     completedAt: submission.completedAt ?? null,
     updatedAt: submission.updatedAt,
