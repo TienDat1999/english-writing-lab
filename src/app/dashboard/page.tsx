@@ -24,6 +24,8 @@ import {
 import { getSession } from "@/server/auth/session";
 import { getDashboardOverview } from "@/server/dashboard/dashboard.service";
 
+import { DeleteSubmissionButton } from "./delete-submission-button";
+
 const statusStyles = {
   DRAFT: "border-slate-200 bg-slate-100 text-slate-700",
   QUEUED: "border-amber-200 bg-amber-50 text-amber-800",
@@ -389,7 +391,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
                         </p>
                       </div>
 
-                      <div className="flex items-center gap-2 shrink-0">
+                      <div className="flex items-center gap-1.5 shrink-0">
                         {item.estimatedOverallBand !== null ? (
                           <div className="rounded-md bg-emerald-50 px-2 py-0.5 border border-emerald-200 text-center">
                             <span className="text-[9px] text-emerald-800 font-medium block leading-none">Band</span>
@@ -402,6 +404,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
                             {statusLabels[item.status]}
                           </Badge>
                         )}
+                        <DeleteSubmissionButton submissionId={item.id} />
                         <span className="text-xs text-muted-foreground group-hover:text-primary group-hover:translate-x-0.5 transition-all">
                           →
                         </span>

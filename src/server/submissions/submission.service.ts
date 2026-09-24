@@ -335,3 +335,18 @@ export async function getSubmissionDetail(
       : null,
   };
 }
+
+export async function deleteSubmission(userId: string, submissionId: string): Promise<boolean> {
+  await connectMongoose();
+  const result = await Submission.deleteOne({
+    _id: new Types.ObjectId(submissionId),
+    userId: new Types.ObjectId(userId),
+  });
+
+  if (result.deletedCount === 0) {
+    throw new ResourceNotFoundError();
+  }
+
+  return true;
+}
+
