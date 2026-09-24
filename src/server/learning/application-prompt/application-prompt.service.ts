@@ -73,7 +73,7 @@ async function generateApplicationPrompt(item: LearningItemDocument & { _id: Typ
   } catch (error) {
     console.error("OpenAI prompt generation error, using fallback:", error);
     const cleanMeaning = view.promptText
-      .replace(/^(?:paraphrase\s*"?[^"]+\"?:\s*|synonym of\s*"?[^"]+\"?:\s*|nghĩa:\s*|ý nghĩa:\s*)/iu, "")
+      .replace(/^(?:paraphrase\s*"?[^"]+"?:\s*|synonym of\s*"?[^"]+"?:\s*|nghĩa:\s*|ý nghĩa:\s*)/iu, "")
       .replace(/^[\s_—–-]+|[\s_—–-]+$/gu, "")
       .trim();
     generated = {
