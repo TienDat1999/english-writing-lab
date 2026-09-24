@@ -13,7 +13,8 @@ export type UploadedQuizTopicView = {
 };
 
 function getLegacyUploadedQuizContent(item: LearningItemDocument) {
-  const paraphraseMatch = item.promptText.match(/^Paraphrase "(.+)": _____$/u);
+  const promptText = item.promptText ?? "";
+  const paraphraseMatch = promptText.match(/^Paraphrase "(.+)": _____$/u);
 
   if (paraphraseMatch) {
     const separatorIndex = (item.hintVi ?? "").indexOf(" · ");
@@ -28,7 +29,7 @@ function getLegacyUploadedQuizContent(item: LearningItemDocument) {
 
   return {
     topicText: "100 cặp Synonym",
-    promptText: item.hintVi || item.promptText,
+    promptText: item.hintVi || promptText || "",
   };
 }
 

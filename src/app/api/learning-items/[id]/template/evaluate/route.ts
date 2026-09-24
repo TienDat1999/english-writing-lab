@@ -3,6 +3,8 @@ import { errorResponse } from "@/server/http/errors";
 import { evaluateTranslationSchema } from "@/server/learning/learning.contract";
 import { evaluateWritingTemplateAttempt } from "@/server/learning/learning.service";
 
+export const maxDuration = 60;
+
 export async function POST(
   request: Request,
   context: { params: Promise<{ id: string }> },

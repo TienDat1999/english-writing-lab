@@ -39,7 +39,8 @@ export function errorResponse(error: unknown): Response {
   }
 
   console.error("Unhandled route error", error);
-  return Response.json({ error: "INTERNAL_ERROR" }, { status: 500 });
+  const message = error instanceof Error ? error.message : "Internal server error";
+  return Response.json({ error: "INTERNAL_ERROR", message }, { status: 500 });
 }
 
 export class ResourceNotFoundError extends Error {

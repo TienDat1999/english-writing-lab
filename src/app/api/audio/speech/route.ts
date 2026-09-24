@@ -4,6 +4,8 @@ import { requireUser } from "@/server/auth/session";
 import { errorResponse } from "@/server/http/errors";
 import { TtsGateway, TTS_VOICES } from "@/server/ai/tts.gateway";
 
+export const maxDuration = 60;
+
 const speechRequestSchema = z.object({
   text: z.string().trim().min(1).max(1000),
   voice: z.enum(TTS_VOICES).default("nova"),

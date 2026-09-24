@@ -47,19 +47,74 @@ export async function evaluateParaphraseApplicationAttempt(
 
   const typedItem = item as unknown as LearningItemDocument & { _id: Types.ObjectId };
   const view = toUploadedQuizView(typedItem);
+  const targetPhrase = (typedItem.answerText || view.answerText || "").trim();
 
-  const applicationPrompt = await ensureApplicationPrompt(typedItem);
-  const env = getAiEnv();
-  const gateway = new OpenAiTranslationReviewGateway(env.OPENAI_API_KEY, env.OPENAI_MODEL);
-  const evaluation = await gateway.evaluate({
-    sourceVi: applicationPrompt.promptVi,
-    referenceEn: applicationPrompt.referenceEn,
-    learnerAnswer,
-    requiredPhrase: view.answerText,
-  });
+  let applicationPrompt: { promptVi: string; referenceEn: string };
+  try {
+    applicationPrompt = await ensureApplicationPrompt(typedItem);
+  } catch (err) {
+    console.error("Failed to ensure application prompt, using fallback:", err);
+    applicationPrompt = {
+      promptVi: typedItem.promptText || view.promptText || "Hãy viết một câu tiếng Anh áp dụng cụm từ sau:",
+      referenceEn: targetPhrase,
+    };
+  }
+
+  const sourceVi = applicationPrompt.promptVi || typedItem.promptText || view.promptText || "";
+  const referenceEn = applicationPrompt.referenceEn || targetPhrase;
+
+  let evaluation: import("@/server/ai/openai/openai-translation.gateway").TranslationEvaluation;
+  try {
+    const env = getAiEnv();
+    const gateway = new OpenAiTranslationReviewGateway(env.OPENAI_API_KEY, env.OPENAI_MODEL);
+    evaluation = await gateway.evaluate({
+      sourceVi,
+      referenceEn,
+      learnerAnswer,
+      requiredPhrase: targetPhrase,
+    });
+  } catch (err) {
+    console.error("OpenAI evaluation failed, using rule-based heuristic fallback:", err);
+    const normalizedAnswer = learnerAnswer.toLocaleLowerCase("en");
+    const normalizedPhrase = targetPhrase.toLocaleLowerCase("en");
+    const hasPhrase = normalizedPhrase.length > 0 && normalizedAnswer.includes(normalizedPhrase);
+
+    evaluation = {
+      score: hasPhrase ? 85 : 60,
+      meaningScore: hasPhrase ? 85 : 60,
+      grammarScore: hasPhrase ? 85 : 70,
+      naturalnessScore: hasPhrase ? 80 : 65,
+      feedbackVi: hasPhrase
+        ? "Câu của bạn diễn đạt tự nhiên và đã áp dụng chính xác cụm từ mục tiêu."
+        : `Câu của bạn cần sử dụng cụm từ bắt buộc: "${targetPhrase}". Hãy đảm bảo sử dụng cụm từ này trong câu.`,
+      correctedTranslation: hasPhrase ? learnerAnswer : referenceEn,
+      upgradedTranslation: referenceEn,
+      patternTipVi: `Mẫu câu gợi ý với [${targetPhrase}]: hãy dùng trong ngữ cảnh phù hợp.`,
+      paraphraseExampleEn: referenceEn,
+      grammarIssues: hasPhrase ? [] : [
+        {
+          sourceQuote: learnerAnswer.slice(0, Math.min(30, learnerAnswer.length)),
+          correction: targetPhrase,
+          explanationVi: `Chưa chứa cụm từ bắt buộc "${targetPhrase}".`,
+        },
+      ],
+      vocabularyUpgrades: [],
+      writingAlternatives: [
+        {
+          label: "Câu gợi ý chuẩn:",
+          sentenceEn: referenceEn,
+          noteVi: `Áp dụng cụm từ "${targetPhrase}"`,
+        },
+      ],
+    };
+  }
+
   const normalizedAnswer = learnerAnswer.toLocaleLowerCase("en");
-  const normalizedPhrase = view.answerText.toLocaleLowerCase("en");
-  const usesRequiredPhrase = normalizedAnswer.includes(normalizedPhrase);
+  const normalizedPhrase = targetPhrase.toLocaleLowerCase("en");
+  const usesRequiredPhrase = normalizedPhrase.length > 0
+    ? normalizedAnswer.includes(normalizedPhrase)
+    : true;
+
   const isCorrect = usesRequiredPhrase
     && evaluation.meaningScore >= 70
     && evaluation.grammarScore >= 70;

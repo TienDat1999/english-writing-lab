@@ -2,6 +2,8 @@ import { requireUser } from "@/server/auth/session";
 import { errorResponse } from "@/server/http/errors";
 import { getParaphraseApplicationPrompt } from "@/server/learning/learning.service";
 
+export const maxDuration = 60;
+
 async function handlePrompt(context: { params: Promise<{ id: string }> }) {
   try {
     const user = await requireUser();
