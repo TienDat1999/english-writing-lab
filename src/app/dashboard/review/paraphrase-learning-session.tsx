@@ -435,9 +435,6 @@ function StepQuestion({
   const [isLoadingPrompt, setIsLoadingPrompt] = useState(false);
   const [isChecking, setIsChecking] = useState(false);
   const [checkingError, setCheckingError] = useState<string | null>(null);
-  const [rewriteAnswer, setRewriteAnswer] = useState("");
-  const [isRewriteCompleted, setIsRewriteCompleted] = useState(false);
-  const [rewriteError, setRewriteError] = useState<string | null>(null);
 
   const meaningOptions = buildMeaningOptions(item, allItems);
   const isRecognition = stage === "RECOGNITION";
@@ -456,32 +453,7 @@ function StepQuestion({
     (applicationEvaluation.grammarIssues?.length > 0 || isCorrect === false)
   );
 
-  const hasTranslationError = !isRecognition && !isApplication && isCorrect === false;
-  const requiresRewrite = hasApplicationGrammarIssues || hasTranslationError;
-  const canContinue = isCorrect !== null && (!requiresRewrite || isRewriteCompleted);
-
-  function handleCheckRewrite() {
-    const trimmed = rewriteAnswer.trim();
-    if (!trimmed) return;
-
-    if (isApplication) {
-      const target = applicationEvaluation?.correctedTranslation || "";
-      if (normalizeAnswer(trimmed) === normalizeAnswer(target)) {
-        setIsRewriteCompleted(true);
-        setRewriteError(null);
-      } else {
-        setRewriteError("Chưa khớp hoàn toàn với câu sửa chuẩn. Hãy kiểm tra kỹ chính tả & từ vựng rồi thử lại nhé.");
-      }
-    } else {
-      const target = item.answerText;
-      if (normalizeAnswer(trimmed) === normalizeAnswer(target)) {
-        setIsRewriteCompleted(true);
-        setRewriteError(null);
-      } else {
-        setRewriteError(`Chưa chính xác. Cụm từ đúng là: "${item.answerText}"`);
-      }
-    }
-  }
+  const canContinue = isCorrect !== null;
 
   useEffect(() => {
     if (!isApplication || applicationPrompt) return;
@@ -754,17 +726,19 @@ function StepQuestion({
                 </p>
               </div>
 
-              {/* Nếu có lỗi ngữ pháp / chính tả -> Bắt buộc viết lại câu chuẩn */}
+              {/* Nếu có góp ý / lỗi sửa */}
               {hasApplicationGrammarIssues ? (
-                <div className="rounded-2xl border-2 border-rose-200 bg-rose-50/60 p-4 space-y-3 shadow-2xs">
+                <div className="rounded-2xl border border-rose-200 bg-rose-50/60 p-4 space-y-3 shadow-2xs">
                   <div className="flex items-start gap-2">
                     <HugeiconsIcon icon={AlertCircleIcon} size={18} className="text-rose-600 shrink-0 mt-0.5" />
                     <div>
                       <p className="text-sm font-bold text-rose-900 leading-snug">
-                        Câu có lỗi ngữ pháp hoặc chính tả!
+                        {isCorrect ? "Gợi ý hoàn thiện câu:" : "Câu chưa đạt chuẩn!"}
                       </p>
                       <p className="text-xs text-rose-700 mt-0.5">
-                        Hãy gõ lại câu hoàn chỉnh đã sửa lỗi bên dưới để tiếp tục:
+                        {isCorrect
+                          ? "Bạn có thể tham khảo câu mẫu bên dưới rồi bấm Câu tiếp theo."
+                          : "Câu này sẽ xuất hiện lại sau khi bạn đi hết vòng hiện tại để bạn viết lại."}
                       </p>
                     </div>
                   </div>
@@ -772,60 +746,13 @@ function StepQuestion({
                   {/* Câu chuẩn mẫu */}
                   <div className="rounded-xl bg-white border border-rose-200/90 p-3 space-y-1 shadow-2xs">
                     <div className="flex items-center justify-between gap-2">
-                      <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Câu sửa chuẩn mẫu:</p>
+                      <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Câu chuẩn gợi ý:</p>
                       <PronunciationControls text={applicationEvaluation.correctedTranslation} />
                     </div>
                     <p className="text-sm font-bold text-emerald-800 leading-relaxed select-all">
                       {applicationEvaluation.correctedTranslation}
                     </p>
                   </div>
-
-                  {/* Ô gõ lại câu sửa */}
-                  {!isRewriteCompleted ? (
-                    <div className="space-y-2">
-                      <Textarea
-                        autoFocus
-                        className="min-h-20 bg-white text-sm leading-relaxed border-rose-300 focus-visible:ring-rose-400"
-                        onChange={(e) => {
-                          setRewriteAnswer(e.target.value);
-                          if (rewriteError) setRewriteError(null);
-                        }}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter" && !e.shiftKey) {
-                            e.preventDefault();
-                            handleCheckRewrite();
-                          }
-                        }}
-                        placeholder="Gõ lại câu hoàn chỉnh đã sửa lỗi vào đây..."
-                        value={rewriteAnswer}
-                      />
-                      {rewriteError ? (
-                        <p className="text-xs font-medium text-rose-600 flex items-center gap-1">
-                          <HugeiconsIcon icon={AlertCircleIcon} size={14} />
-                          {rewriteError}
-                        </p>
-                      ) : null}
-                      <Button
-                        className="w-full rounded-xl gap-2 font-semibold"
-                        disabled={!rewriteAnswer.trim()}
-                        onClick={handleCheckRewrite}
-                        size="sm"
-                      >
-                        <HugeiconsIcon icon={CheckmarkCircle02Icon} size={16} />
-                        Kiểm tra câu viết lại
-                      </Button>
-                    </div>
-                  ) : (
-                    <div className="rounded-xl border border-emerald-300 bg-emerald-100/70 p-3 flex items-center gap-2.5 text-emerald-900 shadow-2xs">
-                      <HugeiconsIcon icon={CheckmarkCircle02Icon} size={20} className="text-emerald-700 shrink-0" />
-                      <div>
-                        <p className="text-sm font-bold">Đã viết lại chính xác! 🎉</p>
-                        <p className="text-xs text-emerald-800">
-                          Bấm nút <strong>&ldquo;Câu tiếp theo ↵&rdquo;</strong> ở góc trên bên phải để tiếp tục.
-                        </p>
-                      </div>
-                    </div>
-                  )}
                 </div>
               ) : (
                 <div className="rounded-xl border border-emerald-200 bg-emerald-50/80 p-3.5 flex items-center gap-2.5 text-emerald-900 shadow-2xs">
@@ -875,50 +802,8 @@ function StepQuestion({
                     {isRecognition ? cleanedPrompt : item.answerText}
                   </p>
                   {!isRecognition ? (
-                    <div className="mt-3 space-y-3">
+                    <div className="mt-3">
                       <PronunciationControls text={item.answerText} />
-
-                      {!isRewriteCompleted ? (
-                        <div className="rounded-xl bg-white border border-rose-200 p-3 space-y-2">
-                          <p className="text-xs font-semibold text-rose-800">
-                            Gõ lại đáp án đúng để ghi nhớ trước khi tiếp tục:
-                          </p>
-                          <div className="flex gap-2">
-                            <input
-                              autoFocus
-                              className="flex h-9 w-full rounded-lg border border-rose-300 bg-white px-3 py-1 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400"
-                              onChange={(e) => {
-                                setRewriteAnswer(e.target.value);
-                                if (rewriteError) setRewriteError(null);
-                              }}
-                              onKeyDown={(e) => {
-                                if (e.key === "Enter") {
-                                  e.preventDefault();
-                                  handleCheckRewrite();
-                                }
-                              }}
-                              placeholder={`Gõ lại: "${item.answerText}"`}
-                              value={rewriteAnswer}
-                            />
-                            <Button
-                              className="rounded-lg shrink-0 font-semibold"
-                              disabled={!rewriteAnswer.trim()}
-                              onClick={handleCheckRewrite}
-                              size="sm"
-                            >
-                              Kiểm tra
-                            </Button>
-                          </div>
-                          {rewriteError ? (
-                            <p className="text-xs text-rose-600">{rewriteError}</p>
-                          ) : null}
-                        </div>
-                      ) : (
-                        <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-800 flex items-center gap-1.5">
-                          <HugeiconsIcon icon={CheckmarkCircle02Icon} size={16} className="text-emerald-600 shrink-0" />
-                          Đã gõ lại chính xác! Hãy bấm &ldquo;Câu tiếp theo&rdquo; ở góc trên.
-                        </div>
-                      )}
                     </div>
                   ) : null}
                   <p className="mt-2 text-xs font-medium text-rose-700">
