@@ -1,8 +1,5 @@
 "use client";
 
-import { SparklesIcon } from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
-
 import { CopyButton } from "./copy-button";
 import { SaveLearningButton } from "./save-learning-button";
 
@@ -33,7 +30,7 @@ export function VocabularyUpgradesTable({
             <tr className="border-b border-slate-200 bg-slate-50/80 text-[11px] font-bold uppercase tracking-wider text-slate-500">
               <th className="w-12 py-3.5 pl-4 text-center">#</th>
               <th className="w-[28%] min-w-[200px] py-3.5 px-3">Từ / Cụm gốc của bạn</th>
-              <th className="w-[34%] min-w-[240px] py-3.5 px-3">Nâng cấp tự nhiên (B2+)</th>
+              <th className="w-[34%] min-w-[240px] py-3.5 px-3">Gợi ý nâng cấp tự nhiên</th>
               <th className="w-[26%] min-w-[180px] py-3.5 px-3">Giải nghĩa tiếng Việt</th>
               <th className="min-w-[130px] py-3.5 pr-4 text-right">Thao tác</th>
             </tr>
@@ -60,13 +57,9 @@ export function VocabularyUpgradesTable({
                   </div>
                 </td>
 
-                {/* Nâng cấp B2+ */}
+                {/* Gợi ý nâng cấp */}
                 <td className="py-4 px-3">
-                  <div className="rounded-xl border border-sky-100 bg-gradient-to-r from-sky-50/70 to-blue-50/30 p-3 space-y-1">
-                    <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-sky-700">
-                      <HugeiconsIcon icon={SparklesIcon} size={12} />
-                      <span>Collocation B2+</span>
-                    </div>
+                  <div className="rounded-xl border border-sky-100 bg-gradient-to-r from-sky-50/70 to-blue-50/30 p-3">
                     <p className="font-heading font-bold text-slate-900 text-sm leading-relaxed text-sky-950">
                       {item.upgradedExpression}
                     </p>
