@@ -1,9 +1,7 @@
 import {
   AlertCircleIcon,
   ArrowRight01Icon,
-  BookOpen01Icon,
   CheckmarkCircle02Icon,
-  Clock01Icon,
   Edit02Icon,
   SparklesIcon,
   Target01Icon,
@@ -26,29 +24,11 @@ import { getSession } from "@/server/auth/session";
 import { ResourceNotFoundError } from "@/server/http/errors";
 import { getSubmissionDetail } from "@/server/submissions/submission.service";
 
+import { RetryAnalysisButton } from "./retry-analysis-button";
 import { SaveLearningButton } from "./save-learning-button";
 import { StatusPoller } from "./status-poller";
 
-const categoryLabels = {
-  TASK_RESPONSE: "Đáp ứng yêu cầu đề (Task Response)",
-  COHERENCE: "Tính mạch lạc & Liên kết (Coherence & Cohesion)",
-  LEXICAL: "Vốn từ vựng (Lexical Resource)",
-  GRAMMAR: "Ngữ pháp (Grammar)",
-  SPELLING: "Chính tả (Spelling)",
-  PUNCTUATION: "Dấu câu (Punctuation)",
-} as const;
 
-const severityStyles = {
-  HIGH: "border-rose-300 bg-rose-50 text-rose-800",
-  MEDIUM: "border-amber-300 bg-amber-50 text-amber-800",
-  LOW: "border-blue-300 bg-blue-50 text-blue-800",
-} as const;
-
-const severityLabels = {
-  HIGH: "Ảnh hưởng lớn",
-  MEDIUM: "Ảnh hưởng vừa",
-  LOW: "Ảnh hưởng nhẹ",
-} as const;
 
 const criteriaLabels = {
   taskResponse: "1. Mức độ trả lời đề bài (Task Response)",
@@ -162,9 +142,12 @@ export default async function SubmissionPage({ params }: SubmissionPageProps) {
             <CardDescription className="text-sm leading-relaxed text-rose-900">
               Hệ thống tạm thời gặp sự cố khi kết nối với mô hình AI. Nội dung bài viết vẫn được giữ nguyên bản, Bạn có thể thử lại sau.
             </CardDescription>
-            <Button asChild className="mt-4 rounded-xl" size="sm">
-              <Link href="/dashboard/new">Viết bài luận mới</Link>
-            </Button>
+            <div className="mt-4 flex flex-wrap items-center justify-center gap-3">
+              <RetryAnalysisButton submissionId={submission.id} />
+              <Button asChild className="rounded-xl" size="sm" variant="outline">
+                <Link href="/dashboard/new">Viết bài luận mới</Link>
+              </Button>
+            </div>
           </CardContent>
         </Card>
       ) : null}

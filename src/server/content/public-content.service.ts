@@ -631,10 +631,10 @@ export async function listPublicCollections(options: {
 
   const docs = await ContentCollection.find(query).sort({ publishedAt: -1, createdAt: -1 }).lean();
 
-  return docs.map((doc: any) => {
+  return docs.map((doc) => {
     const locale = options.locale || "vi";
-    const loc = doc.localizations?.find((l: any) => l.locale === locale) ?? doc.localizations?.[0];
-    const slugObj = doc.slugs?.find((s: any) => s.locale === locale) ?? doc.slugs?.[0];
+    const loc = doc.localizations?.find((l: { locale: string }) => l.locale === locale) ?? doc.localizations?.[0];
+    const slugObj = doc.slugs?.find((s: { locale: string }) => s.locale === locale) ?? doc.slugs?.[0];
     const items = doc.items || [];
 
     return {

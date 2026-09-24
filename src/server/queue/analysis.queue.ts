@@ -15,8 +15,13 @@ const globalForQueue = globalThis as typeof globalThis & {
 };
 
 function getAnalysisQueue(): Queue<AnalyzeEssayJob> {
+  const redisUrl = getServerEnv().REDIS_URL;
+  if (!redisUrl) {
+    throw new Error("REDIS_URL is not configured");
+  }
+
   if (!globalForQueue.analysisRedis) {
-    globalForQueue.analysisRedis = new IORedis(getServerEnv().REDIS_URL, {
+    globalForQueue.analysisRedis = new IORedis(redisUrl, {
       maxRetriesPerRequest: null,
     });
   }

@@ -33,6 +33,33 @@ function createContentHash(input: CreateSubmissionInput): string {
     .digest("hex");
 }
 
+function shouldUseInlineAnalysis(): boolean {
+  if (process.env.ANALYSIS_MODE === "inline") {
+    return true;
+  }
+  if (process.env.ANALYSIS_MODE === "queue") {
+    return false;
+  }
+  // Default to inline on Vercel or when REDIS_URL is not set
+  if (process.env.VERCEL || !process.env.REDIS_URL) {
+    return true;
+  }
+  return false;
+}
+
+async function runInlineAnalysis(job: {
+  submissionId: string;
+  userId: string;
+  pipelineVersion: string;
+}) {
+  const aiEnv = getAiEnv();
+  await processAnalysisInline(
+    job,
+    new OpenAiGateway(aiEnv.OPENAI_API_KEY, aiEnv.OPENAI_MODEL),
+    { provider: "openai", model: aiEnv.OPENAI_MODEL },
+  );
+}
+
 export async function createSubmission(
   userId: string,
   input: CreateSubmissionInput,
@@ -60,26 +87,77 @@ export async function createSubmission(
   };
 
   try {
-    if (process.env.ANALYSIS_MODE === "inline") {
-      const aiEnv = getAiEnv();
-      await processAnalysisInline(
-        job,
-        new OpenAiGateway(aiEnv.OPENAI_API_KEY, aiEnv.OPENAI_MODEL),
-        { provider: "openai", model: aiEnv.OPENAI_MODEL },
-      );
+    if (shouldUseInlineAnalysis()) {
+      await runInlineAnalysis(job);
       return { id: submission.id, status: "COMPLETED" as const };
     }
 
-    await enqueueEssayAnalysis(job);
+    try {
+      await enqueueEssayAnalysis(job);
+      return { id: submission.id, status: "QUEUED" as const };
+    } catch (queueError) {
+      console.warn("Queue analysis unavailable, falling back to inline analysis:", queueError);
+      await runInlineAnalysis(job);
+      return { id: submission.id, status: "COMPLETED" as const };
+    }
   } catch (error) {
+    console.error("Submission analysis failed:", error);
     await Submission.updateOne(
       { _id: submission._id, userId: ownerId },
-      { $set: { status: "FAILED", failureCode: "QUEUE_UNAVAILABLE" } },
+      { $set: { status: "FAILED", failureCode: "ANALYSIS_FAILED" } },
     );
     throw error;
   }
+}
 
-  return { id: submission.id, status: "QUEUED" as const };
+export async function retrySubmissionAnalysis(
+  userId: string,
+  submissionId: string,
+) {
+  if (!Types.ObjectId.isValid(submissionId)) {
+    throw new ResourceNotFoundError();
+  }
+
+  await connectMongoose();
+  const ownerId = new Types.ObjectId(userId);
+  const submission = await Submission.findOne({
+    _id: new Types.ObjectId(submissionId),
+    userId: ownerId,
+    deletedAt: null,
+  });
+
+  if (!submission) {
+    throw new ResourceNotFoundError();
+  }
+
+  const job = {
+    submissionId: submission.id,
+    userId,
+    pipelineVersion: PIPELINE_VERSION,
+  };
+
+  try {
+    if (shouldUseInlineAnalysis()) {
+      await runInlineAnalysis(job);
+      return { id: submission.id, status: "COMPLETED" as const };
+    }
+
+    try {
+      await enqueueEssayAnalysis(job);
+      return { id: submission.id, status: "QUEUED" as const };
+    } catch (queueError) {
+      console.warn("Queue analysis unavailable, falling back to inline analysis:", queueError);
+      await runInlineAnalysis(job);
+      return { id: submission.id, status: "COMPLETED" as const };
+    }
+  } catch (error) {
+    console.error("Submission retry analysis failed:", error);
+    await Submission.updateOne(
+      { _id: submission._id, userId: ownerId },
+      { $set: { status: "FAILED", failureCode: "ANALYSIS_FAILED" } },
+    );
+    throw error;
+  }
 }
 
 export type SubmissionListItem = {

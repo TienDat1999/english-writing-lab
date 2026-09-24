@@ -127,7 +127,7 @@ export function SubmissionForm() {
         return;
       }
 
-      router.push(`/dashboard?submitted=${payload.data.id}`);
+      router.push(`/dashboard/submissions/${payload.data.id}`);
     } catch {
       setError("Mất kết nối với máy chủ. Bài viết của Bạn chưa được nộp thành công.");
     } finally {
@@ -351,7 +351,10 @@ export function SubmissionForm() {
           type="submit"
         >
           {isSubmitting ? (
-            "Đang gửi bài viết..."
+            <span className="inline-flex items-center gap-2">
+              <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+              <span>Đang chấm bài bằng AI (khoảng 20-30s)...</span>
+            </span>
           ) : (
             <span className="inline-flex items-center gap-2">
               <span>Gửi bài để AI phân tích</span>

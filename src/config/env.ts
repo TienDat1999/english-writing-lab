@@ -5,7 +5,7 @@ import { z } from "zod";
 const serverEnvSchema = z.object({
   MONGODB_URI: z.string().min(1),
   MONGODB_DB: z.string().min(1).default("english_study"),
-  REDIS_URL: z.string().min(1),
+  REDIS_URL: z.string().min(1).optional(),
 });
 
 export type ServerEnv = z.infer<typeof serverEnvSchema>;
