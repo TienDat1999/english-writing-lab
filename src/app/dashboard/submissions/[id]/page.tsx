@@ -26,12 +26,12 @@ import { ResourceNotFoundError } from "@/server/http/errors";
 import { getSubmissionDetail } from "@/server/submissions/submission.service";
 
 import { CopyButton } from "./copy-button";
-import { GrammarCorrectionCard } from "./grammar-correction-card";
+import { GrammarCorrectionsTable } from "./grammar-corrections-table";
 import { RetryAnalysisButton } from "./retry-analysis-button";
 import { RewrittenEssayViewer } from "./rewritten-essay-viewer";
 import { SectionNav } from "./section-nav";
 import { StatusPoller } from "./status-poller";
-import { VocabularyUpgradeCard } from "./vocabulary-upgrade-card";
+import { VocabularyUpgradesTable } from "./vocabulary-upgrades-table";
 
 const criteriaConfig = {
   taskResponse: {
@@ -439,24 +439,18 @@ export default async function SubmissionPage({ params }: SubmissionPageProps) {
                     Sửa các lỗi ngữ pháp then chốt
                   </h2>
                   <p className="text-xs text-muted-foreground">
-                    So sánh câu gốc và câu chuẩn kèm giải thích ngữ pháp và nút lưu vào sổ tay ôn tập.
+                    So sánh đối chiếu câu gốc và câu chuẩn kèm giải thích quy tắc và nút lưu vào sổ tay ôn tập.
                   </p>
                 </div>
+                <span className="text-xs font-semibold text-rose-700 bg-rose-50 border border-rose-200/80 px-3 py-1 rounded-full">
+                  {submission.analysis.grammarCorrections.length} lỗi cần sửa
+                </span>
               </div>
 
-              <div className="grid gap-4 md:grid-cols-2">
-                {submission.analysis.grammarCorrections.map((correction, index) => (
-                  <GrammarCorrectionCard
-                    key={index}
-                    index={index}
-                    submissionId={submission.id}
-                    sourceQuote={correction.sourceQuote}
-                    correctionText={correction.correctionText}
-                    correctionVi={correction.correctionVi}
-                    explanationVi={correction.explanationVi}
-                  />
-                ))}
-              </div>
+              <GrammarCorrectionsTable
+                submissionId={submission.id}
+                corrections={submission.analysis.grammarCorrections}
+              />
             </section>
           ) : null}
 
@@ -475,20 +469,15 @@ export default async function SubmissionPage({ params }: SubmissionPageProps) {
                     Thay thế từ đơn giản hoặc dịch từng chữ bằng các cụm collocations tự nhiên hơn.
                   </p>
                 </div>
+                <span className="text-xs font-semibold text-sky-700 bg-sky-50 border border-sky-200/80 px-3 py-1 rounded-full">
+                  {submission.analysis.vocabularyUpgrades.length} cụm nâng cấp
+                </span>
               </div>
 
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {submission.analysis.vocabularyUpgrades.map((upgrade, index) => (
-                  <VocabularyUpgradeCard
-                    key={index}
-                    index={index}
-                    submissionId={submission.id}
-                    originalExpression={upgrade.originalExpression}
-                    upgradedExpression={upgrade.upgradedExpression}
-                    meaningVi={upgrade.meaningVi}
-                  />
-                ))}
-              </div>
+              <VocabularyUpgradesTable
+                submissionId={submission.id}
+                upgrades={submission.analysis.vocabularyUpgrades}
+              />
             </section>
           ) : null}
 
