@@ -348,7 +348,7 @@ export function StepLearningSession({
   }
 
   return (
-    <div className="mx-auto max-w-5xl">
+    <div className={`mx-auto transition-all duration-300 ${stage.id === "APPLICATION" ? "max-w-6xl" : "max-w-4xl"}`}>
       <div className="mb-4 rounded-2xl border border-blue-100 bg-white/75 px-4 py-3 shadow-sm sm:flex sm:items-start sm:px-5">
         {stages.map((learningStage, index) => (
           <div className="contents" key={learningStage.id}>
@@ -435,6 +435,10 @@ function StepQuestion({
   const [isLoadingPrompt, setIsLoadingPrompt] = useState(false);
   const [isChecking, setIsChecking] = useState(false);
   const [checkingError, setCheckingError] = useState<string | null>(null);
+  const [rewriteAnswer, setRewriteAnswer] = useState("");
+  const [isRewriteCompleted, setIsRewriteCompleted] = useState(false);
+  const [rewriteError, setRewriteError] = useState<string | null>(null);
+
   const meaningOptions = buildMeaningOptions(item, allItems);
   const isRecognition = stage === "RECOGNITION";
   const isApplication = stage === "APPLICATION";
@@ -445,6 +449,39 @@ function StepQuestion({
     : isApplication
       ? `Nghĩa: ${cleanedPrompt}`
       : item.topicText;
+
+  const hasApplicationGrammarIssues = Boolean(
+    isApplication &&
+    applicationEvaluation &&
+    (applicationEvaluation.grammarIssues?.length > 0 || isCorrect === false)
+  );
+
+  const hasTranslationError = !isRecognition && !isApplication && isCorrect === false;
+  const requiresRewrite = hasApplicationGrammarIssues || hasTranslationError;
+  const canContinue = isCorrect !== null && (!requiresRewrite || isRewriteCompleted);
+
+  function handleCheckRewrite() {
+    const trimmed = rewriteAnswer.trim();
+    if (!trimmed) return;
+
+    if (isApplication) {
+      const target = applicationEvaluation?.correctedTranslation || "";
+      if (normalizeAnswer(trimmed) === normalizeAnswer(target)) {
+        setIsRewriteCompleted(true);
+        setRewriteError(null);
+      } else {
+        setRewriteError("Chưa khớp hoàn toàn với câu sửa chuẩn. Hãy kiểm tra kỹ chính tả & từ vựng rồi thử lại nhé.");
+      }
+    } else {
+      const target = item.answerText;
+      if (normalizeAnswer(trimmed) === normalizeAnswer(target)) {
+        setIsRewriteCompleted(true);
+        setRewriteError(null);
+      } else {
+        setRewriteError(`Chưa chính xác. Cụm từ đúng là: "${item.answerText}"`);
+      }
+    }
+  }
 
   useEffect(() => {
     if (!isApplication || applicationPrompt) return;
@@ -522,8 +559,8 @@ function StepQuestion({
   }
 
   function continueToNext() {
-    if (isCorrect === null || saving || isChecking) return;
-    onContinue(isCorrect);
+    if (!canContinue || saving || isChecking) return;
+    onContinue(isCorrect ?? false);
   }
 
   useEffect(() => {
@@ -532,12 +569,12 @@ function StepQuestion({
       if (!isEnter || event.shiftKey) return;
       if (event.isComposing || event.keyCode === 229) return;
 
-      // When actively typing inside textarea, textarea's own onKeyDown takes precedence
-      if (event.target instanceof HTMLTextAreaElement) {
+      // When actively typing inside textarea or input, let the element's own onKeyDown handle it
+      if (event.target instanceof HTMLTextAreaElement || event.target instanceof HTMLInputElement) {
         return;
       }
 
-      if (isCorrect !== null) {
+      if (canContinue) {
         // Prevent accidental double-action: ensure at least 400ms passed since answer check
         if (Date.now() - lastCheckedAtRef.current < 400) {
           return;
@@ -550,7 +587,7 @@ function StepQuestion({
       }
 
       const trimmed = answer.trim();
-      if (!isRecognition && trimmed && !isChecking && (!isApplication || applicationPrompt)) {
+      if (!isRecognition && trimmed && !isChecking && (!isApplication || applicationPrompt) && isCorrect === null) {
         event.preventDefault();
         lastCheckedAtRef.current = Date.now();
         void checkAnswer(trimmed);
@@ -558,7 +595,7 @@ function StepQuestion({
     }
     window.addEventListener("keydown", handleGlobalKeyDown);
     return () => window.removeEventListener("keydown", handleGlobalKeyDown);
-  }, [isCorrect, saving, isChecking, onContinue, isRecognition, answer, isApplication, applicationPrompt]);
+  }, [canContinue, isCorrect, saving, isChecking, onContinue, isRecognition, answer, isApplication, applicationPrompt]);
 
   return (
     <Card className="border-t-4 border-t-primary bg-card shadow-[0_18px_40px_rgb(35_87_170/12%)]">
@@ -571,7 +608,7 @@ function StepQuestion({
               {isRecognition || isApplication ? <PronunciationControls text={item.answerText} /> : null}
             </div>
           </div>
-          <div className="flex shrink-0 gap-2">
+          <div className="flex shrink-0 items-center gap-2">
             <Button
               className="rounded-full"
               disabled={!canGoBack || saving}
@@ -584,19 +621,29 @@ function StepQuestion({
               Quay lại
             </Button>
             <Button
-              className="rounded-full"
-              disabled={isCorrect === null || saving || isChecking}
+              className={`rounded-full gap-1.5 transition-all ${
+                canContinue
+                  ? "bg-primary text-primary-foreground shadow-md hover:bg-primary/90 font-semibold"
+                  : ""
+              }`}
+              disabled={!canContinue || saving || isChecking}
               onClick={continueToNext}
               size="sm"
               type="button"
+              variant={canContinue ? "default" : "outline"}
             >
-              {saving ? "Đang lưu..." : "Câu tiếp theo"}
-              <HugeiconsIcon icon={ArrowRight01Icon} strokeWidth={2} />
+              <span>{saving ? "Đang lưu..." : "Câu tiếp theo"}</span>
+              {canContinue ? (
+                <kbd className="hidden sm:inline-block rounded bg-primary-foreground/20 px-1 py-0.5 text-[10px] font-mono leading-none">
+                  ↵
+                </kbd>
+              ) : null}
+              <HugeiconsIcon icon={ArrowRight01Icon} strokeWidth={2} size={15} />
             </Button>
           </div>
         </div>
       </CardHeader>
-      <CardContent className="space-y-3 px-5 pb-4">
+      <CardContent className="space-y-4 px-5 pb-5">
         {isRecognition ? (
           <div className="grid gap-3 sm:grid-cols-2">
             {meaningOptions.map((option) => (
@@ -612,7 +659,7 @@ function StepQuestion({
               </Button>
             ))}
           </div>
-        ) : (
+        ) : isCorrect === null ? (
           <div className="space-y-3">
             {isApplication ? (
               <div className="flex gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-amber-950">
@@ -624,7 +671,7 @@ function StepQuestion({
                     <>
                       <p className="mt-1 text-sm leading-6">{applicationPrompt}</p>
                       <p className="mt-1 text-xs text-amber-700">
-                        Hãy diễn đạt ý này bằng tiếng Anh và sử dụng "{item.answerText}".
+                        Hãy diễn đạt ý này bằng tiếng Anh và sử dụng &ldquo;{item.answerText}&rdquo;.
                       </p>
                     </>
                   ) : null}
@@ -648,7 +695,7 @@ function StepQuestion({
             <Textarea
               autoFocus
               className="min-h-24 bg-[#f8faff] text-base leading-6"
-              disabled={isCorrect !== null || isChecking}
+              disabled={isChecking}
               onChange={(event) => setAnswer(event.target.value)}
               onKeyDown={(event) => {
                 if (event.nativeEvent?.isComposing || event.keyCode === 229) {
@@ -658,16 +705,10 @@ function StepQuestion({
                 if (isEnter && !event.shiftKey) {
                   event.preventDefault();
                   event.stopPropagation();
-                  if (isCorrect === null) {
-                    const currentVal = (event.currentTarget as HTMLTextAreaElement).value.trim() || answer.trim();
-                    if (currentVal && !isChecking && (!isApplication || applicationPrompt)) {
-                      lastCheckedAtRef.current = Date.now();
-                      void checkAnswer(currentVal);
-                    }
-                  } else {
-                    if (Date.now() - lastCheckedAtRef.current >= 400 && !saving && !isChecking) {
-                      continueToNext();
-                    }
+                  const currentVal = (event.currentTarget as HTMLTextAreaElement).value.trim() || answer.trim();
+                  if (currentVal && !isChecking && (!isApplication || applicationPrompt)) {
+                    lastCheckedAtRef.current = Date.now();
+                    void checkAnswer(currentVal);
                   }
                 }
               }}
@@ -676,11 +717,6 @@ function StepQuestion({
                 : config.translationPlaceholder}
               value={answer}
             />
-          </div>
-        )}
-
-        {isCorrect === null ? (
-          !isRecognition ? (
             <Button
               className="w-full rounded-full"
               disabled={!answer.trim() || isChecking || (isApplication && !applicationPrompt)}
@@ -692,30 +728,129 @@ function StepQuestion({
             >
               {isChecking ? "Đang kiểm tra câu..." : "Kiểm tra đáp án"}
             </Button>
-          ) : null
+          </div>
         ) : isApplication && applicationEvaluation ? (
-          <div className="space-y-3">
-            <ApplicationFeedbackView
-              isCorrect={isCorrect}
-              evaluation={applicationEvaluation}
-              requiredPhrase={item.answerText}
-            />
-            <div className="flex justify-end pt-1">
-              <Button
-                className="rounded-full px-5 font-semibold gap-2 shadow-sm"
-                disabled={saving || isChecking}
-                onClick={continueToNext}
-                size="default"
-              >
-                <span>{saving ? "Đang lưu..." : "Câu tiếp theo"}</span>
-                <kbd className="hidden sm:inline-block rounded bg-primary-foreground/20 px-1.5 py-0.5 text-[10px] font-mono leading-none">
-                  ↵
-                </kbd>
-                <HugeiconsIcon icon={ArrowRight01Icon} strokeWidth={2} size={15} />
-              </Button>
+          /* Split layout 2 cột: Cột trái (Bài làm & Viết lại) / Cột phải (AI Feedback) */
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+            {/* Cột trái (5 cols): Câu hỏi, câu đã nộp, ô viết lại khi có lỗi */}
+            <div className="lg:col-span-5 space-y-3.5">
+              {/* Ý gợi ý tiếng Việt */}
+              <div className="flex gap-3 rounded-xl border border-amber-200 bg-amber-50/80 px-4 py-3 text-amber-950 shadow-2xs">
+                <HugeiconsIcon className="mt-0.5 size-5 shrink-0 text-amber-600" icon={Idea01Icon} strokeWidth={2} />
+                <div className="space-y-1">
+                  <p className="text-xs font-bold uppercase tracking-wider text-amber-800">Ý tưởng cần diễn đạt</p>
+                  <p className="text-sm font-medium leading-relaxed">{applicationPrompt}</p>
+                  <p className="text-xs text-amber-700">
+                    Cụm từ bắt buộc: <span className="font-bold underline decoration-amber-500">{item.answerText}</span>
+                  </p>
+                </div>
+              </div>
+
+              {/* Câu bạn đã nộp */}
+              <div className="rounded-xl border border-slate-200 bg-slate-50/80 p-3.5 space-y-1.5 shadow-2xs">
+                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Câu bạn đã nộp:</p>
+                <p className="text-sm text-slate-900 font-medium italic select-all leading-relaxed">
+                  &ldquo;{answer}&rdquo;
+                </p>
+              </div>
+
+              {/* Nếu có lỗi ngữ pháp / chính tả -> Bắt buộc viết lại câu chuẩn */}
+              {hasApplicationGrammarIssues ? (
+                <div className="rounded-2xl border-2 border-rose-200 bg-rose-50/60 p-4 space-y-3 shadow-2xs">
+                  <div className="flex items-start gap-2">
+                    <HugeiconsIcon icon={AlertCircleIcon} size={18} className="text-rose-600 shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-sm font-bold text-rose-900 leading-snug">
+                        Câu có lỗi ngữ pháp hoặc chính tả!
+                      </p>
+                      <p className="text-xs text-rose-700 mt-0.5">
+                        Hãy gõ lại câu hoàn chỉnh đã sửa lỗi bên dưới để tiếp tục:
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Câu chuẩn mẫu */}
+                  <div className="rounded-xl bg-white border border-rose-200/90 p-3 space-y-1 shadow-2xs">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Câu sửa chuẩn mẫu:</p>
+                      <PronunciationControls text={applicationEvaluation.correctedTranslation} />
+                    </div>
+                    <p className="text-sm font-bold text-emerald-800 leading-relaxed select-all">
+                      {applicationEvaluation.correctedTranslation}
+                    </p>
+                  </div>
+
+                  {/* Ô gõ lại câu sửa */}
+                  {!isRewriteCompleted ? (
+                    <div className="space-y-2">
+                      <Textarea
+                        autoFocus
+                        className="min-h-20 bg-white text-sm leading-relaxed border-rose-300 focus-visible:ring-rose-400"
+                        onChange={(e) => {
+                          setRewriteAnswer(e.target.value);
+                          if (rewriteError) setRewriteError(null);
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" && !e.shiftKey) {
+                            e.preventDefault();
+                            handleCheckRewrite();
+                          }
+                        }}
+                        placeholder="Gõ lại câu hoàn chỉnh đã sửa lỗi vào đây..."
+                        value={rewriteAnswer}
+                      />
+                      {rewriteError ? (
+                        <p className="text-xs font-medium text-rose-600 flex items-center gap-1">
+                          <HugeiconsIcon icon={AlertCircleIcon} size={14} />
+                          {rewriteError}
+                        </p>
+                      ) : null}
+                      <Button
+                        className="w-full rounded-xl gap-2 font-semibold"
+                        disabled={!rewriteAnswer.trim()}
+                        onClick={handleCheckRewrite}
+                        size="sm"
+                      >
+                        <HugeiconsIcon icon={CheckmarkCircle02Icon} size={16} />
+                        Kiểm tra câu viết lại
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="rounded-xl border border-emerald-300 bg-emerald-100/70 p-3 flex items-center gap-2.5 text-emerald-900 shadow-2xs">
+                      <HugeiconsIcon icon={CheckmarkCircle02Icon} size={20} className="text-emerald-700 shrink-0" />
+                      <div>
+                        <p className="text-sm font-bold">Đã viết lại chính xác! 🎉</p>
+                        <p className="text-xs text-emerald-800">
+                          Bấm nút <strong>&ldquo;Câu tiếp theo ↵&rdquo;</strong> ở góc trên bên phải để tiếp tục.
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="rounded-xl border border-emerald-200 bg-emerald-50/80 p-3.5 flex items-center gap-2.5 text-emerald-900 shadow-2xs">
+                  <HugeiconsIcon icon={CheckmarkCircle02Icon} size={20} className="text-emerald-600 shrink-0" />
+                  <div>
+                    <p className="text-sm font-bold">Xuất sắc! Câu của bạn đạt chuẩn ✓</p>
+                    <p className="text-xs text-emerald-700">
+                      Bấm nút <strong>&ldquo;Câu tiếp theo ↵&rdquo;</strong> ở góc trên bên phải để tiếp tục.
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Cột phải (7 cols): AI Coaching & Feedback cuộn độc lập */}
+            <div className="lg:col-span-7 space-y-4 lg:max-h-[calc(100vh-210px)] lg:overflow-y-auto lg:pr-1.5 scrollbar-thin">
+              <ApplicationFeedbackView
+                isCorrect={isCorrect}
+                evaluation={applicationEvaluation}
+                requiredPhrase={item.answerText}
+              />
             </div>
           </div>
         ) : (
+          /* Translation hoặc Recognition kết quả */
           <div className="space-y-3">
             <div className={isCorrect
                 ? "rounded-xl border border-emerald-200 bg-emerald-50 p-4"
@@ -740,27 +875,57 @@ function StepQuestion({
                     {isRecognition ? cleanedPrompt : item.answerText}
                   </p>
                   {!isRecognition ? (
-                    <div className="mt-3"><PronunciationControls text={item.answerText} /></div>
+                    <div className="mt-3 space-y-3">
+                      <PronunciationControls text={item.answerText} />
+
+                      {!isRewriteCompleted ? (
+                        <div className="rounded-xl bg-white border border-rose-200 p-3 space-y-2">
+                          <p className="text-xs font-semibold text-rose-800">
+                            Gõ lại đáp án đúng để ghi nhớ trước khi tiếp tục:
+                          </p>
+                          <div className="flex gap-2">
+                            <input
+                              autoFocus
+                              className="flex h-9 w-full rounded-lg border border-rose-300 bg-white px-3 py-1 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400"
+                              onChange={(e) => {
+                                setRewriteAnswer(e.target.value);
+                                if (rewriteError) setRewriteError(null);
+                              }}
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter") {
+                                  e.preventDefault();
+                                  handleCheckRewrite();
+                                }
+                              }}
+                              placeholder={`Gõ lại: "${item.answerText}"`}
+                              value={rewriteAnswer}
+                            />
+                            <Button
+                              className="rounded-lg shrink-0 font-semibold"
+                              disabled={!rewriteAnswer.trim()}
+                              onClick={handleCheckRewrite}
+                              size="sm"
+                            >
+                              Kiểm tra
+                            </Button>
+                          </div>
+                          {rewriteError ? (
+                            <p className="text-xs text-rose-600">{rewriteError}</p>
+                          ) : null}
+                        </div>
+                      ) : (
+                        <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-800 flex items-center gap-1.5">
+                          <HugeiconsIcon icon={CheckmarkCircle02Icon} size={16} className="text-emerald-600 shrink-0" />
+                          Đã gõ lại chính xác! Hãy bấm &ldquo;Câu tiếp theo&rdquo; ở góc trên.
+                        </div>
+                      )}
+                    </div>
                   ) : null}
                   <p className="mt-2 text-xs font-medium text-rose-700">
                     Từ này sẽ xuất hiện lại sau khi bạn đi hết vòng hiện tại.
                   </p>
                 </>
               ) : null}
-            </div>
-            <div className="flex justify-end pt-1">
-              <Button
-                className="rounded-full px-5 font-semibold gap-2 shadow-sm"
-                disabled={saving || isChecking}
-                onClick={continueToNext}
-                size="default"
-              >
-                <span>{saving ? "Đang lưu..." : "Câu tiếp theo"}</span>
-                <kbd className="hidden sm:inline-block rounded bg-primary-foreground/20 px-1.5 py-0.5 text-[10px] font-mono leading-none">
-                  ↵
-                </kbd>
-                <HugeiconsIcon icon={ArrowRight01Icon} strokeWidth={2} size={15} />
-              </Button>
             </div>
           </div>
         )}
