@@ -1362,16 +1362,8 @@ function TranslationResult({
             <span className="text-[10px] text-slate-400 font-mono mt-0.5">/ 100</span>
           </div>
 
-          <div className="space-y-1 min-w-0">
-            <div className="flex items-center gap-2">
-              <span className={`rounded-full border px-2 py-0.5 text-[11px] font-bold ${tier.badgeClass}`}>
-                {tier.tier}
-              </span>
-              <span className="text-xs font-semibold text-slate-600 truncate">
-                {tier.title}
-              </span>
-            </div>
-            <p className="text-xs font-medium text-slate-700 leading-relaxed pt-0.5">
+          <div className="min-w-0 flex-1">
+            <p className="text-xs sm:text-sm font-medium text-slate-700 leading-relaxed">
               {evaluation.feedbackVi}
             </p>
           </div>
@@ -1388,19 +1380,6 @@ function TranslationResult({
             ))}
           </div>
         </div>
-
-        {/* Grammar & Vocabulary Issues summary callout */}
-        {evaluation.grammarIssues && evaluation.grammarIssues.length > 0 && (
-          <div className="rounded-xl border border-rose-200/90 bg-rose-50/70 p-3.5 space-y-1.5">
-            <div className="flex items-center gap-1.5 text-rose-800 font-bold text-xs">
-              <HugeiconsIcon icon={AlertCircleIcon} size={15} />
-              <span>Phát hiện {evaluation.grammarIssues.length} điểm cần sửa</span>
-            </div>
-            <p className="text-[11px] text-slate-600 leading-relaxed">
-              Từ sai đã được gạch đỏ trực tiếp và gợi ý sửa ngay trong câu bên phải. Xem bảng phân tích ngữ pháp chi tiết bên dưới.
-            </p>
-          </div>
-        )}
 
         {/* Actions: Always visible on desktop without scrolling! */}
         <div className="pt-2 space-y-2 border-t border-slate-100">
