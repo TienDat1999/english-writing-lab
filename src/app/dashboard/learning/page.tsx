@@ -7,6 +7,7 @@ import {
 import { HugeiconsIcon } from "@hugeicons/react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { after } from "next/server";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -27,19 +28,26 @@ export default async function LearningPage() {
     redirect("/login");
   }
 
-  await syncLearningItemsFromCompletedSubmissions(session.user.id);
+  const userId = session.user.id;
+  after(async () => {
+    try {
+      await syncLearningItemsFromCompletedSubmissions(userId);
+    } catch (error) {
+      console.error("Unable to sync learning items after page render", error);
+    }
+  });
 
   const [items, masteredItems, uploadedTopics, stats] = await Promise.all([
-    listLearningItems(session.user.id, 1, 24),
-    listLearningItems(session.user.id, 1, 12, { status: "MASTERED" }),
+    listLearningItems(userId, 1, 24),
+    listLearningItems(userId, 1, 12, { status: "MASTERED" }),
     Promise.all([
-      listUploadedQuizTopics(session.user.id, "COLLOCATION", 1, 6),
-      listUploadedQuizTopics(session.user.id, "TOPIC_VOCABULARY", 1, 6),
-      listUploadedQuizTopics(session.user.id, "PARAPHRASE", 1, 6),
-      listUploadedQuizTopics(session.user.id, "SYNONYM", 1, 6),
-      listUploadedQuizTopics(session.user.id, "TEMPLATE", 1, 6),
+      listUploadedQuizTopics(userId, "COLLOCATION", 1, 6),
+      listUploadedQuizTopics(userId, "TOPIC_VOCABULARY", 1, 6),
+      listUploadedQuizTopics(userId, "PARAPHRASE", 1, 6),
+      listUploadedQuizTopics(userId, "SYNONYM", 1, 6),
+      listUploadedQuizTopics(userId, "TEMPLATE", 1, 6),
     ]),
-    getLearningStats(session.user.id),
+    getLearningStats(userId),
   ]);
 
   return (
