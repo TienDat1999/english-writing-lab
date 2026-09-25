@@ -49,6 +49,10 @@ type TranslationEvaluation = {
   grammarIssues: Array<{
     sourceQuote: string;
     correction: string;
+    wordClass?: string;
+    issueType?: "GRAMMAR_ERROR" | "STYLE_SUGGESTION" | "SPELLING_TYPO";
+    reasonVi?: string;
+    contextAndExampleVi?: string;
     explanationVi: string;
   }>;
   vocabularyUpgrades?: Array<{
@@ -1385,36 +1389,16 @@ function TranslationResult({
           </div>
         </div>
 
-        {/* Grammar & Vocabulary Issues (if any) */}
+        {/* Grammar & Vocabulary Issues summary callout */}
         {evaluation.grammarIssues && evaluation.grammarIssues.length > 0 && (
-          <div className="space-y-2 pt-3 border-t border-slate-100">
-            <div className="flex items-center gap-1.5 text-rose-700">
+          <div className="rounded-xl border border-rose-200/90 bg-rose-50/70 p-3.5 space-y-1.5">
+            <div className="flex items-center gap-1.5 text-rose-800 font-bold text-xs">
               <HugeiconsIcon icon={AlertCircleIcon} size={15} />
-              <span className="text-[11px] font-bold uppercase tracking-wider">
-                Điểm cần sửa ({evaluation.grammarIssues.length})
-              </span>
+              <span>Phát hiện {evaluation.grammarIssues.length} điểm cần sửa</span>
             </div>
-            <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
-              {evaluation.grammarIssues.map((issue, index) => (
-                <div
-                  className="rounded-lg bg-rose-50/60 p-2.5 text-xs space-y-1 border border-rose-100/80"
-                  key={`${issue.sourceQuote}-${index}`}
-                >
-                  <div className="flex items-center gap-1.5 flex-wrap font-medium">
-                    <span className="line-through decoration-rose-400 text-rose-700 text-xs">
-                      {issue.sourceQuote}
-                    </span>
-                    <span className="text-slate-400 text-xs">→</span>
-                    <span className="font-semibold text-emerald-700 text-xs">
-                      {issue.correction}
-                    </span>
-                  </div>
-                  <p className="text-slate-600 leading-relaxed text-[11px]">
-                    {issue.explanationVi}
-                  </p>
-                </div>
-              ))}
-            </div>
+            <p className="text-[11px] text-slate-600 leading-relaxed">
+              Từ sai đã được gạch đỏ trực tiếp và gợi ý sửa ngay trong câu bên phải. Xem bảng phân tích ngữ pháp chi tiết bên dưới.
+            </p>
           </div>
         )}
 
@@ -1458,6 +1442,7 @@ function TranslationResult({
           text={learnerAnswer}
           variant="learner"
           showActions={false}
+          issues={evaluation.grammarIssues}
         />
 
         <AnswerCard
@@ -1467,6 +1452,11 @@ function TranslationResult({
           text={evaluation.correctedTranslation}
           variant="corrected"
         />
+
+        {/* Detailed Grammar & Vocabulary Issues Analysis */}
+        {evaluation.grammarIssues && evaluation.grammarIssues.length > 0 && (
+          <DetailedGrammarIssuesSection issues={evaluation.grammarIssues} />
+        )}
 
         {/* B2 Natural Upgrade */}
         {evaluation.upgradedTranslation && evaluation.upgradedTranslation !== evaluation.correctedTranslation && (
@@ -1542,6 +1532,217 @@ function TranslationResult({
   );
 }
 
+function renderAnnotatedAnswer(
+  text: string,
+  issues?: TranslationEvaluation["grammarIssues"],
+) {
+  if (!issues || issues.length === 0) {
+    return text;
+  }
+
+  type Match = {
+    start: number;
+    end: number;
+    sourceQuote: string;
+    correction: string;
+    issue: NonNullable<TranslationEvaluation["grammarIssues"]>[number];
+  };
+
+  const matches: Match[] = [];
+  const lowerText = text.toLowerCase();
+
+  for (const issue of issues) {
+    const rawQuote = issue.sourceQuote?.trim();
+    if (!rawQuote) continue;
+
+    let start = text.indexOf(rawQuote);
+    if (start === -1) {
+      start = lowerText.indexOf(rawQuote.toLowerCase());
+    }
+
+    if (start !== -1) {
+      matches.push({
+        start,
+        end: start + rawQuote.length,
+        sourceQuote: text.slice(start, start + rawQuote.length),
+        correction: issue.correction,
+        issue,
+      });
+    }
+  }
+
+  if (matches.length === 0) {
+    return text;
+  }
+
+  matches.sort((a, b) => {
+    if (a.start !== b.start) return a.start - b.start;
+    return (b.end - b.start) - (a.end - a.start);
+  });
+
+  const nonOverlapping: Match[] = [];
+  let currentEnd = -1;
+  for (const m of matches) {
+    if (m.start >= currentEnd) {
+      nonOverlapping.push(m);
+      currentEnd = m.end;
+    }
+  }
+
+  const nodes: React.ReactNode[] = [];
+  let lastIndex = 0;
+
+  nonOverlapping.forEach((m, idx) => {
+    if (m.start > lastIndex) {
+      nodes.push(text.slice(lastIndex, m.start));
+    }
+
+    const isStyle = m.issue.issueType === "STYLE_SUGGESTION";
+    const isTypo = m.issue.issueType === "SPELLING_TYPO";
+
+    nodes.push(
+      <span
+        key={`annotated-match-${idx}`}
+        className="inline-flex flex-wrap items-baseline gap-1 mx-1 my-0.5 align-baseline"
+      >
+        <span
+          className={`line-through decoration-2 px-1.5 py-0.5 rounded font-semibold text-sm sm:text-base ${
+            isStyle
+              ? "decoration-indigo-400 text-indigo-700 bg-indigo-50/90"
+              : isTypo
+                ? "decoration-amber-500 text-amber-800 bg-amber-50"
+                : "decoration-rose-500 text-rose-700 bg-rose-50"
+          }`}
+          title={m.issue.reasonVi || m.issue.explanationVi}
+        >
+          {m.sourceQuote}
+        </span>
+        <span className="text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded font-bold border border-emerald-200/90 text-sm sm:text-base shadow-2xs">
+          {m.correction}
+        </span>
+      </span>,
+    );
+
+    lastIndex = m.end;
+  });
+
+  if (lastIndex < text.length) {
+    nodes.push(text.slice(lastIndex));
+  }
+
+  return nodes;
+}
+
+function DetailedGrammarIssuesSection({
+  issues,
+}: {
+  issues: NonNullable<TranslationEvaluation["grammarIssues"]>;
+}) {
+  if (!issues || issues.length === 0) return null;
+
+  return (
+    <div className="rounded-xl border border-slate-200/90 bg-white p-4 sm:p-5 space-y-4 shadow-2xs">
+      <div className="flex items-center justify-between gap-2 border-b border-slate-100 pb-3">
+        <div className="flex items-center gap-2">
+          <div className="grid size-7 place-items-center rounded-lg bg-rose-50 text-rose-700">
+            <HugeiconsIcon icon={AlertCircleIcon} size={16} />
+          </div>
+          <div>
+            <h4 className="font-heading text-sm sm:text-base font-bold text-slate-900 leading-snug">
+              Chi tiết các điểm cần sửa &amp; Phân tích ngữ pháp
+            </h4>
+            <p className="text-xs text-muted-foreground">
+              Phân tích rõ từ loại, lý do ngữ pháp, phân loại lỗi và ngữ cảnh sử dụng
+            </p>
+          </div>
+        </div>
+        <span className="rounded-full bg-rose-100 border border-rose-200 text-rose-800 px-2.5 py-0.5 text-xs font-bold shrink-0">
+          {issues.length} điểm cần sửa
+        </span>
+      </div>
+
+      <div className="space-y-3.5">
+        {issues.map((issue, index) => {
+          const isStyle = issue.issueType === "STYLE_SUGGESTION";
+          const isTypo = issue.issueType === "SPELLING_TYPO";
+
+          return (
+            <div
+              key={`${issue.sourceQuote}-${index}`}
+              className="rounded-xl border border-slate-200 bg-slate-50/50 p-4 space-y-3 transition-all hover:border-slate-300"
+            >
+              {/* Header: Badges & Index */}
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="flex flex-wrap items-center gap-2">
+                  {/* Issue Type Badge */}
+                  {isStyle ? (
+                    <span className="rounded-full bg-indigo-50 border border-indigo-200 text-indigo-700 px-2.5 py-0.5 text-[11px] font-bold flex items-center gap-1">
+                      <span>✨</span> Tùy chọn văn phong (Style / Khuyên dùng)
+                    </span>
+                  ) : isTypo ? (
+                    <span className="rounded-full bg-amber-50 border border-amber-200 text-amber-800 px-2.5 py-0.5 text-[11px] font-bold flex items-center gap-1">
+                      <span>✏️</span> Lỗi chính tả (Spelling)
+                    </span>
+                  ) : (
+                    <span className="rounded-full bg-rose-50 border border-rose-200 text-rose-700 px-2.5 py-0.5 text-[11px] font-bold flex items-center gap-1">
+                      <HugeiconsIcon icon={AlertCircleIcon} size={13} />
+                      Lỗi ngữ pháp tuyệt đối (Cần sửa)
+                    </span>
+                  )}
+
+                  {/* Word Class Badge */}
+                  {issue.wordClass && (
+                    <span className="rounded-full bg-slate-100 border border-slate-200 text-slate-700 px-2.5 py-0.5 text-[11px] font-semibold">
+                      Từ loại: {issue.wordClass}
+                    </span>
+                  )}
+                </div>
+
+                <span className="text-[11px] font-mono text-slate-400">
+                  #{index + 1}
+                </span>
+              </div>
+
+              {/* Direct correction row */}
+              <div className="flex items-center gap-2 flex-wrap bg-white rounded-lg p-2.5 border border-slate-200/80">
+                <span className="line-through decoration-rose-400 decoration-2 text-rose-700 font-bold text-sm sm:text-base bg-rose-50 px-2 py-0.5 rounded">
+                  {issue.sourceQuote}
+                </span>
+                <span className="text-slate-400 font-bold text-sm">→</span>
+                <span className="text-emerald-700 font-bold text-sm sm:text-base bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200/80 shadow-2xs">
+                  {issue.correction}
+                </span>
+              </div>
+
+              {/* Grammar reason */}
+              <div className="rounded-lg bg-white border border-slate-200/70 p-3 space-y-1 text-xs sm:text-sm">
+                <p className="font-bold text-slate-800 flex items-center gap-1.5 text-xs uppercase tracking-wider text-muted-foreground">
+                  <span>📖</span> Lý do ngữ pháp:
+                </p>
+                <p className="text-slate-700 leading-relaxed font-normal">
+                  {issue.reasonVi || issue.explanationVi}
+                </p>
+              </div>
+
+              {/* Context & Example */}
+              {issue.contextAndExampleVi && (
+                <div className="rounded-lg bg-sky-50/60 border border-sky-100 p-3 space-y-1 text-xs sm:text-sm">
+                  <p className="font-bold text-sky-900 flex items-center gap-1.5 text-xs uppercase tracking-wider">
+                    <span>💡</span> Ngữ cảnh &amp; Ví dụ:
+                  </p>
+                  <p className="text-sky-950/85 leading-relaxed font-normal">
+                    {issue.contextAndExampleVi}
+                  </p>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 const answerCardStyles = {
   learner: {
     card: "border-slate-200/80 bg-slate-50/70",
@@ -1570,6 +1771,7 @@ function AnswerCard({
   onPhraseSaved,
   sourceLearningItemId,
   showActions = true,
+  issues,
 }: {
   label: string;
   text: string;
@@ -1577,10 +1779,14 @@ function AnswerCard({
   onPhraseSaved?: (item: LearningItemView) => void;
   sourceLearningItemId?: string;
   showActions?: boolean;
+  issues?: TranslationEvaluation["grammarIssues"];
 }) {
   const styles = answerCardStyles[variant];
   const [selectedPhrase, setSelectedPhrase] = useState("");
   const [saveStatus, setSaveStatus] = useState<"IDLE" | "SAVING" | "SAVED" | "ERROR">("IDLE");
+  const [showRaw, setShowRaw] = useState(false);
+
+  const hasIssues = Boolean(issues && issues.length > 0);
 
   function captureSelection() {
     if (!onPhraseSaved || !sourceLearningItemId) return;
@@ -1630,20 +1836,39 @@ function AnswerCard({
             {label}
           </span>
           <span className={`rounded-full border px-2 py-0.5 text-[10px] font-bold ${styles.badge}`}>
-            {styles.status}
+            {variant === "learner"
+              ? hasIssues
+                ? "Bản của bạn (Sửa trực tiếp)"
+                : "Bản của bạn ✓ Chuẩn ngữ pháp"
+              : styles.status}
           </span>
         </div>
-        {showActions && (
-          <div className="flex items-center gap-1">
-            <PronounceButton text={text} />
-            <CopyButton text={text} />
-          </div>
-        )}
+        <div className="flex items-center gap-1.5">
+          {variant === "learner" && hasIssues && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowRaw(!showRaw)}
+              className="h-6 text-[11px] px-2 text-muted-foreground hover:text-foreground font-semibold"
+            >
+              {showRaw ? "Xem sửa trực tiếp" : "Xem câu gốc"}
+            </Button>
+          )}
+          {showActions && (
+            <div className="flex items-center gap-1">
+              <PronounceButton text={text} />
+              <CopyButton text={text} />
+            </div>
+          )}
+        </div>
       </div>
 
-      <p className="cursor-text select-text whitespace-pre-wrap text-base sm:text-[17px] font-medium leading-relaxed text-slate-900">
-        {text}
-      </p>
+      <div className="cursor-text select-text whitespace-pre-wrap text-base sm:text-[17px] font-medium leading-relaxed text-slate-900">
+        {variant === "learner" && hasIssues && !showRaw
+          ? renderAnnotatedAnswer(text, issues)
+          : text}
+      </div>
 
       {selectedPhrase && onPhraseSaved ? (
         <div className="mt-3 flex flex-col gap-2 rounded-lg border border-sky-200 bg-white p-2.5 sm:flex-row sm:items-center sm:justify-between text-xs shadow-2xs">

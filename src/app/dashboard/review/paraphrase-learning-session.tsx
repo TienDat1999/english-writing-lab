@@ -33,6 +33,10 @@ type ApplicationEvaluation = {
   grammarIssues: Array<{
     sourceQuote: string;
     correction: string;
+    wordClass?: string;
+    issueType?: "GRAMMAR_ERROR" | "STYLE_SUGGESTION" | "SPELLING_TYPO";
+    reasonVi?: string;
+    contextAndExampleVi?: string;
     explanationVi: string;
   }>;
   vocabularyUpgrades?: Array<{
@@ -909,26 +913,72 @@ function ApplicationFeedbackView({
         </div>
 
         {grammarIssues.length > 0 ? (
-          <div className="space-y-2">
-            {grammarIssues.map((issue, idx) => (
-              <div
-                key={`${issue.sourceQuote}-${idx}`}
-                className="rounded-xl border border-rose-200/90 bg-white p-3 text-xs space-y-1 shadow-2xs"
-              >
-                <div className="flex items-center gap-1.5 flex-wrap">
-                  <span className="line-through decoration-rose-400 text-rose-700 font-semibold text-xs sm:text-sm">
-                    {issue.sourceQuote}
-                  </span>
-                  <span className="text-slate-400">→</span>
-                  <span className="font-bold text-emerald-700 text-xs sm:text-sm">
-                    {issue.correction}
-                  </span>
+          <div className="space-y-3">
+            {grammarIssues.map((issue, idx) => {
+              const isStyle = issue.issueType === "STYLE_SUGGESTION";
+              const isTypo = issue.issueType === "SPELLING_TYPO";
+
+              return (
+                <div
+                  key={`${issue.sourceQuote}-${idx}`}
+                  className="rounded-xl border border-slate-200 bg-white p-3.5 text-xs space-y-2.5 shadow-2xs"
+                >
+                  <div className="flex flex-wrap items-center justify-between gap-1.5 border-b border-slate-100 pb-2">
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      {isStyle ? (
+                        <span className="rounded-full bg-indigo-50 border border-indigo-200 text-indigo-700 px-2 py-0.5 text-[10px] font-bold">
+                          ✨ Tùy chọn văn phong (Style)
+                        </span>
+                      ) : isTypo ? (
+                        <span className="rounded-full bg-amber-50 border border-amber-200 text-amber-800 px-2 py-0.5 text-[10px] font-bold">
+                          ✏️ Lỗi chính tả
+                        </span>
+                      ) : (
+                        <span className="rounded-full bg-rose-50 border border-rose-200 text-rose-700 px-2 py-0.5 text-[10px] font-bold">
+                          Lỗi ngữ pháp tuyệt đối
+                        </span>
+                      )}
+                      {issue.wordClass && (
+                        <span className="rounded-full bg-slate-100 border border-slate-200 text-slate-700 px-2 py-0.5 text-[10px] font-semibold">
+                          {issue.wordClass}
+                        </span>
+                      )}
+                    </div>
+                    <span className="text-[10px] font-mono text-slate-400">#{idx + 1}</span>
+                  </div>
+
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <span className="line-through decoration-rose-400 decoration-2 text-rose-700 font-bold text-xs sm:text-sm bg-rose-50 px-1.5 py-0.5 rounded">
+                      {issue.sourceQuote}
+                    </span>
+                    <span className="text-slate-400 font-bold">→</span>
+                    <span className="font-bold text-emerald-700 text-xs sm:text-sm bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200/80">
+                      {issue.correction}
+                    </span>
+                  </div>
+
+                  <div className="rounded-lg bg-slate-50 border border-slate-200/70 p-2.5 space-y-1">
+                    <p className="font-bold text-slate-700 text-[11px] uppercase tracking-wider">
+                      📖 Lý do ngữ pháp:
+                    </p>
+                    <p className="text-slate-600 leading-relaxed font-normal">
+                      {issue.reasonVi || issue.explanationVi}
+                    </p>
+                  </div>
+
+                  {issue.contextAndExampleVi && (
+                    <div className="rounded-lg bg-sky-50/60 border border-sky-100 p-2.5 space-y-1">
+                      <p className="font-bold text-sky-900 text-[11px] uppercase tracking-wider">
+                        💡 Ngữ cảnh &amp; Ví dụ:
+                      </p>
+                      <p className="text-sky-950/80 leading-relaxed font-normal">
+                        {issue.contextAndExampleVi}
+                      </p>
+                    </div>
+                  )}
                 </div>
-                <p className="text-slate-600 leading-relaxed text-xs">
-                  {issue.explanationVi}
-                </p>
-              </div>
-            ))}
+              );
+            })}
           </div>
         ) : (
           <div className="rounded-xl border border-emerald-200/80 bg-white/90 px-3 py-2.5 text-xs flex items-center gap-2 text-emerald-800 shadow-2xs">

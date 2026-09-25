@@ -26,6 +26,13 @@ export const translationEvaluationSchema = z.object({
     z.object({
       sourceQuote: z.string().min(1),
       correction: z.string().min(1),
+      wordClass: z.string().optional().default(""),
+      issueType: z
+        .enum(["GRAMMAR_ERROR", "STYLE_SUGGESTION", "SPELLING_TYPO"])
+        .optional()
+        .default("GRAMMAR_ERROR"),
+      reasonVi: z.string().optional().default(""),
+      contextAndExampleVi: z.string().optional().default(""),
       explanationVi: z.string().min(1),
     }),
   ).max(6),
@@ -74,11 +81,39 @@ const translationEvaluationJsonSchema = {
       items: {
         type: "object",
         additionalProperties: false,
-        required: ["sourceQuote", "correction", "explanationVi"],
+        required: [
+          "sourceQuote",
+          "correction",
+          "wordClass",
+          "issueType",
+          "reasonVi",
+          "contextAndExampleVi",
+          "explanationVi",
+        ],
         properties: {
           sourceQuote: { type: "string" },
           correction: { type: "string" },
-          explanationVi: { type: "string" },
+          wordClass: {
+            type: "string",
+            description: "Part of speech / word class (e.g. 'Transitive verb (Ngoại động từ)', 'Noun phrase', 'Relative pronoun', 'Preposition', 'Spelling typo')",
+          },
+          issueType: {
+            type: "string",
+            enum: ["GRAMMAR_ERROR", "STYLE_SUGGESTION", "SPELLING_TYPO"],
+            description: "Classification: GRAMMAR_ERROR (absolute grammar break), STYLE_SUGGESTION (style/formality/restrictive which vs that), or SPELLING_TYPO (spelling mistake)",
+          },
+          reasonVi: {
+            type: "string",
+            description: "Clear grammatical reason in Vietnamese why original phrase is incorrect, analyzing word class and sentence structure",
+          },
+          contextAndExampleVi: {
+            type: "string",
+            description: "Context and example explaining when the original structure might still be valid (if any, e.g. when used as a noun) or illustrating proper usage",
+          },
+          explanationVi: {
+            type: "string",
+            description: "Concise 1-2 sentence Vietnamese explanation combining word class and grammar rule",
+          },
         },
       },
     },
@@ -174,7 +209,14 @@ export class OpenAiTranslationReviewGateway implements ITranslationReviewGateway
           "patternTipVi must contain a reusable English sentence pattern with clear placeholders in square brackets, followed by one brief Vietnamese explanation.",
           "paraphraseExampleEn must be one complete natural B2 English example that demonstrates a genuinely different paraphrase of that pattern. Use a different concrete topic so the learner can see how to transfer the structure. Do not repeat correctedTranslation or upgradedTranslation.",
           "feedbackVi: Write a supportive 1-2 sentence overall summary in Vietnamese evaluating the sentence, highlighting what the learner did well and key areas for improvement in grammar or word choice.",
-          "Every grammarIssues.sourceQuote must be copied exactly from the learner answer. Identify any grammatical errors, tense or agreement issues, wrong prepositions, or spelling typos. Return an empty grammarIssues array only when grammar is completely error-free.",
+          "Detailed rules for grammarIssues:",
+          "1. Every grammarIssues.sourceQuote must be copied exactly from the learner answer.",
+          "2. wordClass: Analyze and state the exact grammatical word class / part of speech (e.g. 'Transitive verb (Ngoại động từ)', 'Intransitive verb (Nội động từ)', 'Noun phrase (Cụm danh từ)', 'Relative pronoun (Đại từ quan hệ)', 'Preposition (Giới từ)', 'Spelling typo (Lỗi chính tả)').",
+          "MANDATORY PRINCIPLE 1 (WORD CLASS DISTINCTION): Always determine the exact part of speech before judging prepositions or sentence roles to prevent wrong corrections. For instance, words like 'support', 'contact', 'influence' have different rules as verbs vs nouns: as a transitive verb, 'support' takes a direct object with NO preposition ('people support study programs'); as a noun, it takes 'support for' ('support for study programs'). NEVER advise removing a preposition without stating its verb vs noun word class.",
+          "MANDATORY PRINCIPLE 2 (SEPARATE ABSOLUTE GRAMMAR ERRORS VS STYLE CHOICES): Categorize issueType strictly as 'GRAMMAR_ERROR' (genuine grammatical syntax/agreement breaks, e.g. subject-verb disagreement like 'government argue' -> 'argues'), 'STYLE_SUGGESTION' (stylistic preference, naturalness, formality, restrictive 'which' vs 'that', British vs American English), or 'SPELLING_TYPO' (typos like 'suport' -> 'support'). Do NOT impose rigid rules or claim stylistic options like restrictive 'which' are grammatically wrong!",
+          "MANDATORY PRINCIPLE 3 (CONTEXT-AWARE ANALYSIS & EXAMPLES): In reasonVi, explain why the original phrase is incorrect or suboptimal in the context of the entire sentence rather than in isolation. In contextAndExampleVi, provide context and concrete examples explaining when the learner's original construction COULD still be correct (if applicable, e.g. when 'support' functions as a noun: 'There is strong public support for educational programs') and demonstrate proper usage.",
+          "3. explanationVi: A concise, student-friendly 1-2 sentence Vietnamese explanation.",
+          "4. Return an empty grammarIssues array only when grammar is completely error-free.",
           "vocabularyUpgrades: Identify 1 to 3 words, prepositions, or expressions in the learner answer that can be upgraded for more natural, professional, or academic English (e.g. replacing unnatural prepositions like 'budget of' -> 'budget for', informal phrasing, or wordy structures). For each item: originalWord must be the exact word or short phrase from learnerAnswer; upgradedAlternatives must be 1 to 3 natural/academic B2-C1 alternatives separated by slashes (e.g. 'budget for', 'finalize / resolve', 'reach a decision'); reasonVi must be a concise explanation in Vietnamese. Return an empty array only if vocabulary is already optimal.",
           "If the answer is unrelated or not English, score it near zero and clearly explain the problem without inventing grammar issues.",
         ].join(" "),

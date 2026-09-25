@@ -95,6 +95,10 @@ export async function evaluateParaphraseApplicationAttempt(
         {
           sourceQuote: learnerAnswer.slice(0, Math.min(30, learnerAnswer.length)),
           correction: targetPhrase,
+          wordClass: "Cụm từ bắt buộc (Required phrase)",
+          issueType: "GRAMMAR_ERROR" as const,
+          reasonVi: `Câu chưa chứa cụm từ bắt buộc "${targetPhrase}".`,
+          contextAndExampleVi: `Áp dụng đúng cấu trúc: ${referenceEn}`,
           explanationVi: `Chưa chứa cụm từ bắt buộc "${targetPhrase}".`,
         },
       ],
