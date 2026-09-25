@@ -32,7 +32,7 @@ export default async function SettingsPage({
     const email = String(formData.get("email") ?? "");
     const roles = formData.getAll("roles").map(String) as StaffRole[];
     const reason = String(formData.get("reason") ?? "");
-    let result = "assigned";
+    const result = "assigned";
     try {
       await assignStaffRole({
         actorUserId: user.id,
@@ -53,7 +53,7 @@ export default async function SettingsPage({
     const { user } = await requireAnyAdminPermission(["STAFF_ROLE_MANAGE"]);
     const userId = String(formData.get("userId") ?? "");
     const reason = String(formData.get("reason") ?? "");
-    let result = "revoked";
+    const result = "revoked";
     try {
       await revokeStaffRole({
         actorUserId: user.id,

@@ -8,6 +8,7 @@ const navigationRules: Array<{
   permissions?: ApplicationPermission[];
 }> = [
   { href: "/" },
+  { href: "/analytics" },
   { href: "/lessons", permissions: ["CONTENT_DRAFT_VIEW"] },
   { href: "/collections", permissions: ["CONTENT_DRAFT_VIEW"] },
   { href: "/media", permissions: ["CONTENT_DRAFT_VIEW"] },

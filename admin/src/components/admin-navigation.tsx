@@ -1,11 +1,11 @@
 "use client";
 
 import {
+  AlertCircleIcon,
   Analytics01Icon,
   BookOpen01Icon,
   DashboardSquare01Icon,
   Image01Icon,
-  LibrariesIcon,
   Settings01Icon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
@@ -14,9 +14,10 @@ import { usePathname } from "next/navigation";
 
 const items = [
   { href: "/", icon: DashboardSquare01Icon, label: "Dashboard" },
+  { href: "/analytics", icon: Analytics01Icon, label: "Thống kê" },
   { href: "/lessons", icon: BookOpen01Icon, label: "Kho bài học" },
   { href: "/media", icon: Image01Icon, label: "Media" },
-  { href: "/reports", icon: Analytics01Icon, label: "Báo cáo" },
+  { href: "/reports", icon: AlertCircleIcon, label: "Báo cáo sự cố" },
   { href: "/settings", icon: Settings01Icon, label: "Cài đặt" },
 ] as const;
 
