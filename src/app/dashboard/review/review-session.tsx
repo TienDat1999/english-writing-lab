@@ -832,62 +832,49 @@ export function ReviewSession({
           )}
         </div>
 
-        {/* Right Column: Progress info, Actions, Progress bar */}
-        <div className="w-full md:w-80 lg:w-96 shrink-0 space-y-2">
-          <div className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2">
-              <Badge variant="outline" className="border-slate-200 bg-white font-semibold text-[11px] py-0.5">
-                {isTranslation
-                  ? "VI → EN"
-                  : isTemplateQuiz
-                    ? "WRITING TEMPLATE · VI → EN"
-                    : isUploadedQuiz
-                      ? "UPLOADED QUIZ · VI → EN"
-                      : isPhrase
-                        ? "QUICK QUIZ"
-                        : item.sourceType.replaceAll("_", " ")}
-              </Badge>
-              <span className="text-xs font-mono font-medium text-muted-foreground">
-                {completed + 1} / {totalItems} ({Math.round(((completed + 1) / totalItems) * 100)}%)
-              </span>
-            </div>
+        {/* Right Column: Actions & Progress bar with count */}
+        <div className="w-full md:w-64 lg:w-72 shrink-0 space-y-2">
+          {/* Top row: Action buttons */}
+          <div className="flex items-center justify-end gap-1.5">
+            <Button
+              onClick={() => {
+                persistProgress(items, results);
+                setIsPaused(true);
+              }}
+              size="sm"
+              variant="outline"
+              className="rounded-xl text-xs h-7 px-2.5 gap-1 hover:bg-slate-50"
+            >
+              <HugeiconsIcon icon={PauseIcon} size={13} />
+              <span>Tạm dừng</span>
+            </Button>
 
-            <div className="flex items-center gap-1.5">
+            {activeNextAction && (
               <Button
-                onClick={() => {
-                  persistProgress(items, results);
-                  setIsPaused(true);
-                }}
+                onClick={activeNextAction}
                 size="sm"
-                variant="outline"
-                className="rounded-xl text-xs h-7 px-2.5 gap-1 hover:bg-slate-50"
+                className="rounded-xl text-xs h-7 px-3 gap-1 font-bold shadow-sm"
               >
-                <HugeiconsIcon icon={PauseIcon} size={13} />
-                <span>Tạm dừng</span>
+                <span>Tiếp tục</span>
+                <kbd className="hidden sm:inline-block rounded bg-primary-foreground/20 px-1 py-0.2 text-[9px] font-mono leading-none">
+                  ↵
+                </kbd>
+                <HugeiconsIcon icon={ArrowRight01Icon} size={13} />
               </Button>
-
-              {activeNextAction && (
-                <Button
-                  onClick={activeNextAction}
-                  size="sm"
-                  className="rounded-xl text-xs h-7 px-3 gap-1 font-bold shadow-sm"
-                >
-                  <span>Tiếp tục</span>
-                  <kbd className="hidden sm:inline-block rounded bg-primary-foreground/20 px-1 py-0.2 text-[9px] font-mono leading-none">
-                    ↵
-                  </kbd>
-                  <HugeiconsIcon icon={ArrowRight01Icon} size={13} />
-                </Button>
-              )}
-            </div>
+            )}
           </div>
 
-          {/* Progress Bar */}
-          <div className="h-2 w-full overflow-hidden rounded-full bg-slate-100 shadow-inner">
-            <div
-              className="h-full bg-gradient-to-r from-primary to-sky-400 rounded-full transition-all duration-300"
-              style={{ width: `${Math.round(((completed + 1) / totalItems) * 100)}%` }}
-            />
+          {/* Bottom row: Progress Bar + Clean count */}
+          <div className="flex items-center gap-2.5">
+            <div className="h-2 flex-1 overflow-hidden rounded-full bg-slate-100 shadow-inner">
+              <div
+                className="h-full bg-gradient-to-r from-primary to-sky-400 rounded-full transition-all duration-300"
+                style={{ width: `${Math.round(((completed + 1) / totalItems) * 100)}%` }}
+              />
+            </div>
+            <span className="text-xs font-mono font-semibold text-muted-foreground whitespace-nowrap">
+              {completed + 1} / {totalItems}
+            </span>
           </div>
         </div>
       </div>
