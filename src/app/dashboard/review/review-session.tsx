@@ -1378,120 +1378,95 @@ function TranslationResult({
   const hasPattern = Boolean(evaluation.patternTipVi);
 
   return (
-    <div className="grid gap-4 lg:grid-cols-12 lg:items-start animate-in fade-in-50 duration-300" aria-live="polite">
-      {/* Panel 1: Left 4 cols on desktop (Assessment, Metrics with Icons, Actions) */}
-      <div className="lg:col-span-4 rounded-2xl border border-slate-200/90 bg-white p-4 sm:p-5 shadow-sm space-y-3.5 lg:sticky lg:top-4">
+    <div className="space-y-3.5 animate-in fade-in-50 duration-300" aria-live="polite">
+      {/* Top Horizontal Bar: Đề bài gốc | Điểm số & 3 metrics | Nút tiếp tục & Trạng thái */}
+      <div className="rounded-2xl border border-slate-200/90 bg-white p-3.5 sm:p-4 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-3.5">
+        {/* Left: Đề bài gốc */}
         {sourceText ? (
-          <div className="rounded-xl border border-slate-200/80 bg-slate-50/70 p-3 space-y-1">
+          <div className="min-w-0 md:max-w-md lg:max-w-lg xl:max-w-xl space-y-0.5">
             <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
               Đề bài gốc
             </span>
-            <p className="text-slate-800 font-medium text-xs sm:text-[13px] leading-relaxed">
+            <p className="text-slate-800 font-medium text-xs sm:text-[13px] leading-relaxed line-clamp-2">
               &ldquo;{sourceText}&rdquo;
             </p>
           </div>
         ) : null}
 
-        {/* Score & AI Feedback + 3 Icon Metrics */}
-        <div className="rounded-xl border border-slate-200/80 bg-slate-50/70 p-3.5 space-y-2.5">
-          <div className="flex items-center gap-3">
-            <div className="flex flex-col items-center justify-center rounded-xl bg-white border border-slate-200 px-3 py-1.5 min-w-[4.4rem] shadow-2xs shrink-0">
-              <span className="text-[9px] font-bold uppercase tracking-wider text-slate-400">
-                Điểm số
+        {/* Center: Score + 3 Metric Pills */}
+        <div className="flex items-center gap-3 shrink-0 flex-wrap sm:flex-nowrap">
+          {/* Score Box */}
+          <div className="flex items-center gap-2.5 rounded-xl bg-slate-50 border border-slate-200 px-3 py-1.5 shadow-2xs">
+            <div className="flex flex-col items-center justify-center">
+              <span className="text-[8px] font-bold uppercase tracking-wider text-slate-400 leading-none">
+                Điểm
               </span>
-              <p className={`font-mono text-2xl sm:text-3xl font-black leading-none mt-0.5 ${tier.scoreClass}`}>
+              <p className={`font-mono text-2xl font-black leading-none mt-0.5 ${tier.scoreClass}`}>
                 {evaluation.score}
               </p>
-              <span className="text-[9px] text-slate-400 font-mono">/ 100</span>
+              <span className="text-[8px] text-slate-400 font-mono leading-none mt-0.5">/ 100</span>
             </div>
 
-            <div className="min-w-0 flex-1">
-              <p className="text-xs text-slate-700 leading-relaxed font-medium">
-                {evaluation.feedbackVi}
-              </p>
-            </div>
-          </div>
-
-          {/* 3 Metric Pills with Icons (Replaces heavy progress bars) */}
-          <div className="grid grid-cols-3 gap-1.5 pt-2 border-t border-slate-200/60">
-            <div
-              className="flex items-center justify-between gap-1 py-1 px-1.5 rounded-lg bg-white border border-slate-200/60"
-              title={`${meaningLabel}: ${evaluation.meaningScore}%`}
-            >
-              <div className="flex items-center gap-1 min-w-0">
+            {/* 3 Metric Pills with Icons */}
+            <div className="flex items-center gap-1.5 pl-2.5 border-l border-slate-200">
+              <div
+                className="flex items-center gap-1 py-1 px-1.5 rounded-lg bg-white border border-slate-200/70"
+                title={`${meaningLabel}: ${evaluation.meaningScore}%`}
+              >
                 <HugeiconsIcon icon={Target01Icon} size={13} className="text-emerald-600 shrink-0" />
-                <span className="text-[10px] font-semibold text-slate-600 truncate">
-                  {meaningLabel === "Đúng chức năng" ? "Chức năng" : meaningLabel}
-                </span>
+                <span className="font-mono text-xs font-bold text-slate-800">{evaluation.meaningScore}%</span>
               </div>
-              <span className="font-mono text-[11px] font-bold text-slate-900 shrink-0">
-                {evaluation.meaningScore}%
-              </span>
-            </div>
 
-            <div
-              className="flex items-center justify-between gap-1 py-1 px-1.5 rounded-lg bg-white border border-slate-200/60"
-              title={`Ngữ pháp: ${evaluation.grammarScore}%`}
-            >
-              <div className="flex items-center gap-1 min-w-0">
+              <div
+                className="flex items-center gap-1 py-1 px-1.5 rounded-lg bg-white border border-slate-200/70"
+                title={`Ngữ pháp: ${evaluation.grammarScore}%`}
+              >
                 <HugeiconsIcon icon={PencilEdit02Icon} size={13} className="text-sky-600 shrink-0" />
-                <span className="text-[10px] font-semibold text-slate-600 truncate">Ngữ pháp</span>
+                <span className="font-mono text-xs font-bold text-slate-800">{evaluation.grammarScore}%</span>
               </div>
-              <span className="font-mono text-[11px] font-bold text-slate-900 shrink-0">
-                {evaluation.grammarScore}%
-              </span>
-            </div>
 
-            <div
-              className="flex items-center justify-between gap-1 py-1 px-1.5 rounded-lg bg-white border border-slate-200/60"
-              title={`Tự nhiên: ${evaluation.naturalnessScore}%`}
-            >
-              <div className="flex items-center gap-1 min-w-0">
+              <div
+                className="flex items-center gap-1 py-1 px-1.5 rounded-lg bg-white border border-slate-200/70"
+                title={`Tự nhiên: ${evaluation.naturalnessScore}%`}
+              >
                 <HugeiconsIcon icon={SparklesIcon} size={13} className="text-amber-500 shrink-0" />
-                <span className="text-[10px] font-semibold text-slate-600 truncate">Tự nhiên</span>
+                <span className="font-mono text-xs font-bold text-slate-800">{evaluation.naturalnessScore}%</span>
               </div>
-              <span className="font-mono text-[11px] font-bold text-slate-900 shrink-0">
-                {evaluation.naturalnessScore}%
-              </span>
             </div>
           </div>
         </div>
 
-        {/* Actions: Next button & status */}
-        <div className="pt-1 space-y-2 border-t border-slate-100">
-          <div className="flex gap-2">
-            <Button
-              onClick={onNext}
-              size="lg"
-              className="w-full rounded-xl font-bold h-10 sm:h-11 text-sm gap-2 shadow-sm"
-            >
-              <span>{nextLabel}</span>
-              <kbd className="hidden sm:inline-block rounded bg-primary-foreground/20 px-1.5 py-0.5 text-[10px] font-mono leading-none">
-                ↵
-              </kbd>
-              <HugeiconsIcon icon={ArrowRight01Icon} size={15} />
-            </Button>
-          </div>
+        {/* Right: Actions (Next button + repeat status) */}
+        <div className="flex flex-col sm:items-end justify-center gap-1 shrink-0">
+          <Button
+            onClick={onNext}
+            size="lg"
+            className="rounded-xl font-bold h-10 px-5 text-sm gap-2 shadow-sm w-full sm:w-auto"
+          >
+            <span>{nextLabel}</span>
+            <kbd className="hidden sm:inline-block rounded bg-primary-foreground/20 px-1.5 py-0.5 text-[10px] font-mono leading-none">
+              ↵
+            </kbd>
+            <HugeiconsIcon icon={ArrowRight01Icon} size={15} />
+          </Button>
 
-          <div className="text-center">
-            {hasError ? (
-              <p className="text-[11px] text-amber-700 flex items-center justify-center gap-1 font-medium">
-                <HugeiconsIcon icon={RefreshIcon} size={12} />
-                <span>Câu này sẽ xuất hiện lại sau khi hết vòng để bạn ôn lại</span>
-              </p>
-            ) : (
-              <p className="text-[11px] text-emerald-700 flex items-center justify-center gap-1 font-medium">
-                <HugeiconsIcon icon={CheckmarkCircle02Icon} size={12} />
-                <span>Tuyệt vời! Đã hoàn thành câu này.</span>
-              </p>
-            )}
-          </div>
+          {hasError ? (
+            <p className="text-[11px] text-amber-700 flex items-center gap-1 font-medium">
+              <HugeiconsIcon icon={RefreshIcon} size={11} />
+              <span>Ôn lại khi hết vòng</span>
+            </p>
+          ) : (
+            <p className="text-[11px] text-emerald-700 flex items-center gap-1 font-medium">
+              <HugeiconsIcon icon={CheckmarkCircle02Icon} size={11} />
+              <span>Hoàn thành xuất sắc</span>
+            </p>
+          )}
         </div>
       </div>
 
-      {/* Panel 2: Right 8 cols (Sentences & Template Material) */}
-      <div className="lg:col-span-8 rounded-2xl border border-slate-200/90 bg-white p-4 sm:p-5 shadow-sm space-y-3.5">
-        {/* Full width stacked answers: Learner Answer with inline correction */}
+      {/* Main Content Area: Full width, stacked cleanly */}
+      <div className="space-y-3.5">
+        {/* Bản viết của bạn with direct inline strikethrough correction */}
         <AnswerCard
           label="Bản viết của bạn"
           text={learnerAnswer}
@@ -1510,7 +1485,7 @@ function TranslationResult({
 
         {/* B2 Natural Upgrade & Template Pattern Subgrid */}
         {hasUpgrade && hasPattern ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 items-stretch">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 items-stretch">
             <AnswerCard
               label="Gợi ý viết B2 tự nhiên hơn"
               onPhraseSaved={onPhraseSaved}
