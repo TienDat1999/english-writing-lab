@@ -169,7 +169,7 @@ export default async function SubmissionPage({ params }: SubmissionPageProps) {
             {submission.analysis
               ? "Báo cáo phân tích bài viết"
               : submission.status === "FAILED"
-                ? "Chưa thể hoàn tất phân tích"
+                ? "Chi tiết bài viết"
                 : submission.status === "ANALYZING"
                   ? "AI đang phân tích bài viết"
                   : "Đang xếp hàng phân tích"}
@@ -210,32 +210,80 @@ export default async function SubmissionPage({ params }: SubmissionPageProps) {
         </Card>
       ) : null}
 
-      {/* Trạng thái Thất bại (FAILED) */}
+      {/* Trạng thái Thất bại hoặc cần thử lại (FAILED) - Thiết kế thân thiện, nhẹ nhàng */}
       {submission.status === "FAILED" ? (
-        <Card className="border border-rose-200 bg-rose-50/70 py-10 shadow-sm">
-          <CardContent className="mx-auto max-w-xl text-center space-y-3">
-            <Badge className="border-rose-300 bg-white text-rose-800" variant="outline">
-              Phân tích chưa hoàn tất
-            </Badge>
-            <CardTitle className="font-heading text-2xl font-bold text-foreground">
-              Bài làm của Bạn đã được lưu an toàn
-            </CardTitle>
-            <CardDescription className="text-sm leading-relaxed text-rose-900">
-              Hệ thống tạm thời gặp sự cố khi kết nối với mô hình AI. Nội dung bài viết vẫn được giữ nguyên bản, Bạn có thể thử lại sau.
-            </CardDescription>
-            {submission.failureReason ? (
-              <div className="mx-auto max-w-md rounded-lg border border-rose-300 bg-rose-100/70 p-2.5 text-xs text-rose-900 font-mono text-left">
-                <strong>Chi tiết:</strong> {submission.failureReason}
-              </div>
-            ) : null}
-            <div className="mt-4 flex flex-wrap items-center justify-center gap-3">
+        <div className="space-y-6">
+          <div className="rounded-3xl border border-slate-200/90 bg-white p-8 sm:p-10 shadow-xs text-center space-y-4">
+            <div className="mx-auto flex size-14 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-600 shadow-2xs border border-indigo-100">
+              <HugeiconsIcon icon={SparklesIcon} size={28} />
+            </div>
+
+            <div className="space-y-1.5 max-w-lg mx-auto">
+              <Badge className="border-indigo-200 bg-indigo-50 text-indigo-800 text-xs font-semibold" variant="outline">
+                Bài làm đã lưu an toàn
+              </Badge>
+              <h2 className="font-heading text-xl sm:text-2xl font-bold text-slate-900">
+                Sẵn sàng chấm điểm bài viết của Bạn
+              </h2>
+              <p className="text-sm leading-relaxed text-slate-600">
+                Hệ thống AI vừa gặp gián đoạn kết nối tạm thời. Toàn bộ nội dung bài làm của Bạn đã được lưu trữ an toàn, Bạn chỉ cần bấm nút bên dưới để bắt đầu chấm điểm ngay.
+              </p>
+            </div>
+
+            <div className="pt-2 flex flex-wrap items-center justify-center gap-3">
               <RetryAnalysisButton submissionId={submission.id} />
-              <Button asChild className="rounded-xl" size="sm" variant="outline">
+              <Button asChild className="rounded-xl font-medium text-xs h-9" variant="outline">
                 <Link href="/dashboard/new">Viết bài luận mới</Link>
               </Button>
             </div>
-          </CardContent>
-        </Card>
+
+            {submission.failureReason ? (
+              <details className="mt-4 pt-4 border-t border-slate-100 mx-auto max-w-md text-left text-[11px] text-slate-400 group">
+                <summary className="cursor-pointer hover:text-slate-600 select-none inline-flex items-center gap-1">
+                  <span>Thông tin kỹ thuật chi tiết</span>
+                  <span className="group-open:rotate-180 transition-transform">▾</span>
+                </summary>
+                <div className="mt-2 rounded-lg bg-slate-50 p-2.5 font-mono text-[11px] text-slate-600 border border-slate-200 break-all leading-relaxed">
+                  {submission.failureReason}
+                </div>
+              </details>
+            ) : null}
+          </div>
+
+          {/* Hiển thị bài làm gốc để người dùng hoàn toàn yên tâm */}
+          <section id="original" className="pt-2">
+            <div className="rounded-2xl border border-slate-200/90 bg-white p-5 sm:p-6 shadow-xs space-y-4">
+              <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                <div className="flex items-center gap-2 font-heading font-bold text-sm text-slate-900">
+                  <HugeiconsIcon icon={File02Icon} size={18} className="text-primary" />
+                  <span>Bài viết gốc của Bạn</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs text-slate-700 font-mono font-semibold">
+                    {submission.wordCount} từ
+                  </span>
+                  <CopyButton textToCopy={submission.originalText} label="Chép bài làm" />
+                </div>
+              </div>
+
+              {submission.promptText ? (
+                <div className="rounded-xl bg-slate-50 p-3.5 border border-slate-100">
+                  <p className="text-[10px] font-bold text-muted-foreground uppercase mb-1">Đề bài:</p>
+                  <p className="text-xs sm:text-sm font-medium leading-relaxed text-slate-900">
+                    {submission.promptText}
+                  </p>
+                </div>
+              ) : null}
+
+              <div>
+                <p className="text-[10px] font-bold text-muted-foreground uppercase mb-1.5">Nội dung bài làm:</p>
+                <p className="whitespace-pre-wrap rounded-xl border border-slate-100 bg-slate-50/50 p-4 text-sm leading-relaxed text-slate-800 font-sans">
+                  {submission.originalText}
+                </p>
+              </div>
+            </div>
+          </section>
+        </div>
       ) : null}
 
       {/* KHI ĐÃ CÓ PHÂN TÍCH */}
