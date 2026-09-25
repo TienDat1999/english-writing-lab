@@ -1472,37 +1472,37 @@ function TranslationResult({
 
   return (
     <div className="space-y-3.5 animate-in fade-in-50 duration-300" aria-live="polite">
-      {/* Top Horizontal Bar: Đề bài gốc (Left) | Điểm số & 3 metrics (Right) */}
-      <div className="rounded-2xl border border-slate-200/90 bg-white p-3.5 sm:p-4 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3.5">
+      {/* Top Bar: Đề bài gốc (Left) | Điểm số & 3 metrics (Right) - Frameless, no card wrapper */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-1 py-1">
         {/* Left: Đề bài gốc */}
         {sourceText ? (
           <div className="min-w-0 flex-1 space-y-0.5">
             <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
               Đề bài gốc
             </span>
-            <p className="text-slate-800 font-medium text-xs sm:text-[13px] leading-relaxed line-clamp-2">
+            <p className="text-slate-900 font-semibold text-sm sm:text-base leading-snug">
               &ldquo;{sourceText}&rdquo;
             </p>
           </div>
         ) : null}
 
         {/* Right: Score + 3 Metric Pills with Interactive Tooltips */}
-        <div className="flex items-center gap-2.5 rounded-xl bg-slate-50 border border-slate-200 px-3 py-1.5 shadow-2xs shrink-0 self-start sm:self-auto">
-          <div className="flex flex-col items-center justify-center">
-            <span className="text-[8px] font-bold uppercase tracking-wider text-slate-400 leading-none">
+        <div className="flex items-center gap-3 shrink-0 self-start sm:self-auto">
+          <div className="flex items-baseline gap-1">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mr-0.5">
               Điểm
             </span>
-            <p className={`font-mono text-2xl font-black leading-none mt-0.5 ${tier.scoreClass}`}>
+            <span className={`font-mono text-2xl font-black leading-none ${tier.scoreClass}`}>
               {evaluation.score}
-            </p>
-            <span className="text-[8px] text-slate-400 font-mono leading-none mt-0.5">/ 100</span>
+            </span>
+            <span className="text-[10px] text-slate-400 font-mono">/ 100</span>
           </div>
 
           {/* 3 Metric Pills with Hover Tooltips */}
-          <div className="flex items-center gap-1.5 pl-2.5 border-l border-slate-200">
+          <div className="flex items-center gap-1.5 pl-3 border-l border-slate-200">
             {/* Metric 1: Functional / Meaning */}
             <div
-              className="group relative flex items-center gap-1 py-1 px-1.5 rounded-lg bg-white border border-slate-200/80 hover:border-emerald-300 hover:bg-emerald-50/40 transition-all cursor-help"
+              className="group relative flex items-center gap-1 py-1 px-1.5 rounded-lg bg-white border border-slate-200/80 hover:border-emerald-300 hover:bg-emerald-50/40 transition-all cursor-help shadow-2xs"
               title={`${meaningLabel}: ${evaluation.meaningScore}%`}
             >
               <HugeiconsIcon icon={Target01Icon} size={14} className="text-emerald-600 shrink-0" />
@@ -1516,7 +1516,7 @@ function TranslationResult({
 
             {/* Metric 2: Grammar */}
             <div
-              className="group relative flex items-center gap-1 py-1 px-1.5 rounded-lg bg-white border border-slate-200/80 hover:border-sky-300 hover:bg-sky-50/40 transition-all cursor-help"
+              className="group relative flex items-center gap-1 py-1 px-1.5 rounded-lg bg-white border border-slate-200/80 hover:border-sky-300 hover:bg-sky-50/40 transition-all cursor-help shadow-2xs"
               title={`Ngữ pháp: ${evaluation.grammarScore}%`}
             >
               <HugeiconsIcon icon={PencilEdit02Icon} size={14} className="text-sky-600 shrink-0" />
@@ -1530,7 +1530,7 @@ function TranslationResult({
 
             {/* Metric 3: Naturalness */}
             <div
-              className="group relative flex items-center gap-1 py-1 px-1.5 rounded-lg bg-white border border-slate-200/80 hover:border-amber-300 hover:bg-amber-50/40 transition-all cursor-help"
+              className="group relative flex items-center gap-1 py-1 px-1.5 rounded-lg bg-white border border-slate-200/80 hover:border-amber-300 hover:bg-amber-50/40 transition-all cursor-help shadow-2xs"
               title={`Độ tự nhiên: ${evaluation.naturalnessScore}%`}
             >
               <HugeiconsIcon icon={SparklesIcon} size={14} className="text-amber-500 shrink-0" />
