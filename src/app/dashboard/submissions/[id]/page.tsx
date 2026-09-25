@@ -168,7 +168,11 @@ export default async function SubmissionPage({ params }: SubmissionPageProps) {
           <h1 className="font-heading text-2xl font-black tracking-tight text-foreground sm:text-3xl">
             {submission.analysis
               ? "Báo cáo phân tích bài viết"
-              : "Đang xếp hàng phân tích"}
+              : submission.status === "FAILED"
+                ? "Chưa thể hoàn tất phân tích"
+                : submission.status === "ANALYZING"
+                  ? "AI đang phân tích bài viết"
+                  : "Đang xếp hàng phân tích"}
           </h1>
         </div>
 
