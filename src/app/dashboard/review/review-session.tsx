@@ -2,6 +2,7 @@
 
 import {
   AlertCircleIcon,
+  ArrowLeft01Icon,
   ArrowRight01Icon,
   BookOpen01Icon,
   Clock01Icon,
@@ -286,14 +287,23 @@ function saveProgressToStorage(
   }
 }
 
+export type TopicHeaderInfo = {
+  breadcrumbLabel: string;
+  itemsCount: number;
+  title: string;
+  description: string;
+};
+
 export function ReviewSession({
   initialItems,
   sessionMode = "MIXED",
   uploadedQuizType,
+  topicHeader,
 }: {
   initialItems: LearningItemView[];
   sessionMode?: "MIXED" | "QUICK" | "UPLOADED";
   uploadedQuizType?: UploadedQuizType;
+  topicHeader?: TopicHeaderInfo;
 }) {
   const storageKey = `draftwise_session_${sessionMode}_${uploadedQuizType ?? "all"}`;
 
@@ -560,11 +570,43 @@ export function ReviewSession({
   // Session size selector (if not selected yet and there are more than 5 items)
   if (selectedSize === null && initialItems.length > 5) {
     return (
-      <Card className="border border-slate-200 bg-white p-6 sm:p-8 shadow-sm">
-        <CardHeader className="p-0 mb-6">
-          <Badge variant="secondary" className="w-fit mb-2">
-            Chọn độ dài phiên ôn
-          </Badge>
+      <div className="space-y-6">
+        {topicHeader && (
+          <div className="border-b border-border/80 pb-4">
+            <div className="flex items-center gap-2 mb-2">
+              <Button
+                asChild
+                variant="ghost"
+                size="sm"
+                className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground -ml-2 rounded-lg gap-1"
+              >
+                <Link href="/dashboard/learning">
+                  <HugeiconsIcon icon={ArrowLeft01Icon} size={14} />
+                  <span>Thư viện</span>
+                </Link>
+              </Button>
+              <span className="text-slate-300">/</span>
+              <Badge variant="secondary" className="font-semibold text-xs">
+                {topicHeader.breadcrumbLabel}
+              </Badge>
+              <span className="text-xs text-muted-foreground font-mono">
+                {topicHeader.itemsCount} nội dung
+              </span>
+            </div>
+            <h1 className="font-heading text-2xl font-extrabold tracking-tight sm:text-3xl text-foreground">
+              {topicHeader.title}
+            </h1>
+            <p className="mt-1 text-sm text-muted-foreground max-w-xl">
+              {topicHeader.description}
+            </p>
+          </div>
+        )}
+
+        <Card className="border border-slate-200 bg-white p-6 sm:p-8 shadow-sm">
+          <CardHeader className="p-0 mb-6">
+            <Badge variant="secondary" className="w-fit mb-2">
+              Chọn độ dài phiên ôn
+            </Badge>
           <CardTitle className="font-heading text-2xl font-bold text-foreground">
             Hôm nay Bạn muốn ôn bao nhiêu câu?
           </CardTitle>
@@ -612,6 +654,7 @@ export function ReviewSession({
           </div>
         </CardContent>
       </Card>
+      </div>
     );
   }
 
@@ -754,61 +797,99 @@ export function ReviewSession({
 
   return (
     <div className="mx-auto max-w-6xl space-y-4">
-      {/* Session Progress Header */}
-      <div className="flex items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <Badge variant="outline" className="border-slate-200 bg-white font-semibold text-xs">
-            {isTranslation
-              ? "VI → EN"
-              : isTemplateQuiz
-                ? "WRITING TEMPLATE · VI → EN"
-                : isUploadedQuiz
-                  ? "UPLOADED QUIZ · VI → EN"
-                  : isPhrase
-                    ? "QUICK QUIZ"
-                    : item.sourceType.replaceAll("_", " ")}
-          </Badge>
-          <span className="text-xs font-mono font-medium text-muted-foreground">
-            {completed + 1} / {totalItems} ({Math.round(((completed + 1) / totalItems) * 100)}%)
-          </span>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <Button
-            onClick={() => {
-              persistProgress(items, results);
-              setIsPaused(true);
-            }}
-            size="sm"
-            variant="outline"
-            className="rounded-xl text-xs h-8 gap-1.5 hover:bg-slate-50"
-          >
-            <HugeiconsIcon icon={PauseIcon} size={14} />
-            <span>Tạm dừng</span>
-          </Button>
-
-          {activeNextAction && (
+      {/* Unified 2-Column Header: Left = Topic info, Right = Progress & Actions */}
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 pb-4 border-b border-border/80">
+        {/* Left Column: Topic Info */}
+        <div className="min-w-0 flex-1 space-y-1">
+          <div className="flex items-center gap-2 mb-1">
             <Button
-              onClick={activeNextAction}
+              asChild
+              variant="ghost"
               size="sm"
-              className="rounded-xl text-xs h-8 px-3.5 gap-1.5 font-bold shadow-sm"
+              className="h-6 px-1.5 text-xs text-muted-foreground hover:text-foreground -ml-1 rounded-md gap-1"
             >
-              <span>Tiếp tục</span>
-              <kbd className="hidden sm:inline-block rounded bg-primary-foreground/20 px-1.5 py-0.5 text-[10px] font-mono leading-none">
-                ↵
-              </kbd>
-              <HugeiconsIcon icon={ArrowRight01Icon} size={14} />
+              <Link href="/dashboard/learning">
+                <HugeiconsIcon icon={ArrowLeft01Icon} size={13} />
+                <span>Thư viện</span>
+              </Link>
             </Button>
+            <span className="text-slate-300">/</span>
+            <Badge variant="secondary" className="font-semibold text-[11px] py-0">
+              {topicHeader?.breadcrumbLabel || "Writing Template"}
+            </Badge>
+            <span className="text-[11px] text-muted-foreground font-mono">
+              {topicHeader?.itemsCount ?? items.length} nội dung
+            </span>
+          </div>
+
+          <h1 className="font-heading text-xl sm:text-2xl font-extrabold tracking-tight text-foreground truncate">
+            {topicHeader?.title || item.topicText || "Luyện tập"}
+          </h1>
+          {topicHeader?.description && (
+            <p className="text-xs text-muted-foreground line-clamp-1">
+              {topicHeader.description}
+            </p>
           )}
         </div>
-      </div>
 
-      {/* Progress Bar */}
-      <div className="h-2 w-full overflow-hidden rounded-full bg-slate-100 shadow-inner">
-        <div
-          className="h-full bg-gradient-to-r from-primary to-sky-400 rounded-full transition-all duration-300"
-          style={{ width: `${Math.round(((completed + 1) / totalItems) * 100)}%` }}
-        />
+        {/* Right Column: Progress info, Actions, Progress bar */}
+        <div className="w-full md:w-80 lg:w-96 shrink-0 space-y-2">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <Badge variant="outline" className="border-slate-200 bg-white font-semibold text-[11px] py-0.5">
+                {isTranslation
+                  ? "VI → EN"
+                  : isTemplateQuiz
+                    ? "WRITING TEMPLATE · VI → EN"
+                    : isUploadedQuiz
+                      ? "UPLOADED QUIZ · VI → EN"
+                      : isPhrase
+                        ? "QUICK QUIZ"
+                        : item.sourceType.replaceAll("_", " ")}
+              </Badge>
+              <span className="text-xs font-mono font-medium text-muted-foreground">
+                {completed + 1} / {totalItems} ({Math.round(((completed + 1) / totalItems) * 100)}%)
+              </span>
+            </div>
+
+            <div className="flex items-center gap-1.5">
+              <Button
+                onClick={() => {
+                  persistProgress(items, results);
+                  setIsPaused(true);
+                }}
+                size="sm"
+                variant="outline"
+                className="rounded-xl text-xs h-7 px-2.5 gap-1 hover:bg-slate-50"
+              >
+                <HugeiconsIcon icon={PauseIcon} size={13} />
+                <span>Tạm dừng</span>
+              </Button>
+
+              {activeNextAction && (
+                <Button
+                  onClick={activeNextAction}
+                  size="sm"
+                  className="rounded-xl text-xs h-7 px-3 gap-1 font-bold shadow-sm"
+                >
+                  <span>Tiếp tục</span>
+                  <kbd className="hidden sm:inline-block rounded bg-primary-foreground/20 px-1 py-0.2 text-[9px] font-mono leading-none">
+                    ↵
+                  </kbd>
+                  <HugeiconsIcon icon={ArrowRight01Icon} size={13} />
+                </Button>
+              )}
+            </div>
+          </div>
+
+          {/* Progress Bar */}
+          <div className="h-2 w-full overflow-hidden rounded-full bg-slate-100 shadow-inner">
+            <div
+              className="h-full bg-gradient-to-r from-primary to-sky-400 rounded-full transition-all duration-300"
+              style={{ width: `${Math.round(((completed + 1) / totalItems) * 100)}%` }}
+            />
+          </div>
+        </div>
       </div>
 
       {/* Main Content Area */}

@@ -1,10 +1,5 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
-import { ArrowLeft01Icon } from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
 
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { getSession } from "@/server/auth/session";
 import {
   listDueLearningItems,
@@ -81,43 +76,17 @@ export default async function ReviewPage({ searchParams }: ReviewPageProps) {
     : "Ôn luyện các cụm từ và lỗi sai ngữ pháp đến hạn để đưa vào trí nhớ dài hạn.";
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6 lg:px-8">
-      {/* Refined Page Header */}
-      <div className="mb-6 flex flex-wrap items-start justify-between gap-4 border-b border-border/80 pb-5">
-        <div>
-          <div className="flex items-center gap-2 mb-2">
-            <Button
-              asChild
-              variant="ghost"
-              size="sm"
-              className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground -ml-2 rounded-lg gap-1"
-            >
-              <Link href="/dashboard/learning">
-                <HugeiconsIcon icon={ArrowLeft01Icon} size={14} />
-                <span>Thư viện</span>
-              </Link>
-            </Button>
-            <span className="text-slate-300">/</span>
-            <Badge variant="secondary" className="font-semibold text-xs">
-              {isUploadedMode ? uploadedQuizLabel : isQuickMode ? "Luyện nhanh" : "Ôn tập định kỳ"}
-            </Badge>
-            <span className="text-xs text-muted-foreground font-mono">
-              {items.length} nội dung
-            </span>
-          </div>
-          <h1 className="font-heading text-2xl font-extrabold tracking-tight sm:text-3xl text-foreground">
-            {title}
-          </h1>
-          <p className="mt-1 text-sm text-muted-foreground max-w-xl">
-            {description}
-          </p>
-        </div>
-      </div>
-
+    <div className="mx-auto max-w-6xl px-4 py-4 sm:px-6 lg:px-8">
       <ReviewSession
         initialItems={items}
         sessionMode={isUploadedMode ? "UPLOADED" : isQuickMode ? "QUICK" : "MIXED"}
         uploadedQuizType={quizType}
+        topicHeader={{
+          breadcrumbLabel: isUploadedMode ? uploadedQuizLabel : isQuickMode ? "Luyện nhanh" : "Ôn tập định kỳ",
+          itemsCount: items.length,
+          title,
+          description,
+        }}
       />
     </div>
   );
