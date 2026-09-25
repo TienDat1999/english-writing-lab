@@ -1441,16 +1441,11 @@ function TranslationResult({
           label="Bản viết của bạn"
           text={learnerAnswer}
           variant="learner"
-          showActions={false}
+          showActions={true}
+          actionText={evaluation.correctedTranslation}
           issues={evaluation.grammarIssues}
-        />
-
-        <AnswerCard
-          label="Bản sửa tối ưu"
           onPhraseSaved={onPhraseSaved}
           sourceLearningItemId={sourceLearningItemId}
-          text={evaluation.correctedTranslation}
-          variant="corrected"
         />
 
         {/* Detailed Grammar & Vocabulary Issues Analysis */}
@@ -1771,6 +1766,7 @@ function AnswerCard({
   onPhraseSaved,
   sourceLearningItemId,
   showActions = true,
+  actionText,
   issues,
 }: {
   label: string;
@@ -1779,6 +1775,7 @@ function AnswerCard({
   onPhraseSaved?: (item: LearningItemView) => void;
   sourceLearningItemId?: string;
   showActions?: boolean;
+  actionText?: string;
   issues?: TranslationEvaluation["grammarIssues"];
 }) {
   const styles = answerCardStyles[variant];
@@ -1787,6 +1784,7 @@ function AnswerCard({
   const [showRaw, setShowRaw] = useState(false);
 
   const hasIssues = Boolean(issues && issues.length > 0);
+  const speechText = actionText || text;
 
   function captureSelection() {
     if (!onPhraseSaved || !sourceLearningItemId) return;
@@ -1857,8 +1855,8 @@ function AnswerCard({
           )}
           {showActions && (
             <div className="flex items-center gap-1">
-              <PronounceButton text={text} />
-              <CopyButton text={text} />
+              <PronounceButton text={speechText} />
+              <CopyButton text={speechText} />
             </div>
           )}
         </div>
