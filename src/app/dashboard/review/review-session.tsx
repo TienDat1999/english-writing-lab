@@ -1236,9 +1236,9 @@ function VocabularyUpgradeTable({
     <div className="rounded-xl border border-slate-200/90 bg-white p-4 sm:p-5 space-y-3.5 shadow-2xs">
       <div className="flex items-center justify-between gap-2">
         <h4 className="font-heading text-sm sm:text-base font-bold text-slate-900 leading-snug">
-          Bảng đối chiếu từ vựng nâng cấp{" "}
+          Gợi ý từ vựng nâng cao{" "}
           <span className="text-xs sm:text-sm font-normal text-slate-500 font-sans">
-            (Dành cho viết luận/IELTS)
+            (B2 / C1 - Học thuật & Tự nhiên)
           </span>
         </h4>
         <span className="rounded-full bg-slate-100 border border-slate-200 text-slate-700 px-2 py-0.5 text-[10px] font-bold shrink-0">
@@ -1250,8 +1250,8 @@ function VocabularyUpgradeTable({
         <table className="w-full text-left text-xs sm:text-sm border-collapse">
           <thead>
             <tr className="border-b border-slate-200/80 bg-slate-50/80 text-slate-700">
-              <th className="py-2.5 px-4 font-bold w-1/3 sm:w-1/4">Từ bạn dùng</th>
-              <th className="py-2.5 px-4 font-bold">Từ nâng cấp thay thế</th>
+              <th className="py-2.5 px-4 font-bold w-1/3 sm:w-1/4">Từ gốc trong bài</th>
+              <th className="py-2.5 px-4 font-bold">Gợi ý từ vựng nâng cao</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
@@ -1465,9 +1465,27 @@ function TranslationResult({
         )}
 
         {/* Vocabulary Upgrades Comparison Table (For Essay/IELTS) */}
-        {evaluation.vocabularyUpgrades && evaluation.vocabularyUpgrades.length > 0 && (
-          <VocabularyUpgradeTable upgrades={evaluation.vocabularyUpgrades} />
-        )}
+        {(() => {
+          if (!evaluation.vocabularyUpgrades || evaluation.vocabularyUpgrades.length === 0) return null;
+          const genuineUpgrades = evaluation.vocabularyUpgrades.filter((item) => {
+            const normOrig = item.originalWord.trim().toLowerCase();
+            const normUp = item.upgradedAlternatives.trim().toLowerCase();
+            return !(evaluation.grammarIssues || []).some((issue) => {
+              const normSrc = issue.sourceQuote.trim().toLowerCase();
+              const normCorr = issue.correction.trim().toLowerCase();
+              return (
+                normOrig === normSrc ||
+                normOrig === normCorr ||
+                normUp === normCorr ||
+                normSrc.includes(normOrig) ||
+                normOrig.includes(normSrc)
+              );
+            });
+          });
+
+          if (genuineUpgrades.length === 0) return null;
+          return <VocabularyUpgradeTable upgrades={genuineUpgrades} />;
+        })()}
 
         {/* Template Pattern Formula & Practical Example */}
         {evaluation.patternTipVi && (
@@ -1596,14 +1614,11 @@ function renderAnnotatedAnswer(
     const isTypo = m.issue.issueType === "SPELLING_TYPO";
 
     nodes.push(
-      <span
-        key={`annotated-match-${idx}`}
-        className="inline-flex flex-wrap items-baseline gap-1 mx-1 my-0.5 align-baseline"
-      >
-        <span
-          className={`line-through decoration-2 px-1.5 py-0.5 rounded font-semibold text-sm sm:text-base ${
+      <span key={`annotated-match-${idx}`} className="mx-0.5 inline align-baseline">
+        <del
+          className={`line-through decoration-2 px-1 py-0.5 rounded font-medium text-sm sm:text-base ${
             isStyle
-              ? "decoration-indigo-400 text-indigo-700 bg-indigo-50/90"
+              ? "decoration-indigo-400 text-indigo-700 bg-indigo-50"
               : isTypo
                 ? "decoration-amber-500 text-amber-800 bg-amber-50"
                 : "decoration-rose-500 text-rose-700 bg-rose-50"
@@ -1611,10 +1626,10 @@ function renderAnnotatedAnswer(
           title={m.issue.reasonVi || m.issue.explanationVi}
         >
           {m.sourceQuote}
-        </span>
-        <span className="text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded font-bold border border-emerald-200/90 text-sm sm:text-base shadow-2xs">
+        </del>
+        <ins className="no-underline text-emerald-800 bg-emerald-100/90 px-1.5 py-0.5 rounded font-bold text-sm sm:text-base ml-1 border border-emerald-300/80 shadow-2xs">
           {m.correction}
-        </span>
+        </ins>
       </span>,
     );
 
@@ -1636,27 +1651,22 @@ function DetailedGrammarIssuesSection({
   if (!issues || issues.length === 0) return null;
 
   return (
-    <div className="rounded-xl border border-slate-200/90 bg-white p-4 sm:p-5 space-y-4 shadow-2xs">
+    <div className="rounded-2xl border border-slate-200/90 bg-white p-5 sm:p-6 shadow-sm space-y-4">
       <div className="flex items-center justify-between gap-2 border-b border-slate-100 pb-3">
         <div className="flex items-center gap-2">
-          <div className="grid size-7 place-items-center rounded-lg bg-rose-50 text-rose-700">
+          <div className="grid size-7 place-items-center rounded-lg bg-rose-50 text-rose-600 font-bold">
             <HugeiconsIcon icon={AlertCircleIcon} size={16} />
           </div>
-          <div>
-            <h4 className="font-heading text-sm sm:text-base font-bold text-slate-900 leading-snug">
-              Chi tiết các điểm cần sửa &amp; Phân tích ngữ pháp
-            </h4>
-            <p className="text-xs text-muted-foreground">
-              Phân tích rõ từ loại, lý do ngữ pháp, phân loại lỗi và ngữ cảnh sử dụng
-            </p>
-          </div>
+          <h4 className="font-heading text-sm sm:text-base font-bold text-slate-900 leading-snug">
+            Điểm cần sửa ({issues.length})
+          </h4>
         </div>
-        <span className="rounded-full bg-rose-100 border border-rose-200 text-rose-800 px-2.5 py-0.5 text-xs font-bold shrink-0">
-          {issues.length} điểm cần sửa
+        <span className="text-xs text-muted-foreground font-medium">
+          Gợi ý sửa &amp; phân tích ngữ pháp
         </span>
       </div>
 
-      <div className="space-y-3.5">
+      <div className="divide-y divide-slate-100 space-y-4">
         {issues.map((issue, index) => {
           const isStyle = issue.issueType === "STYLE_SUGGESTION";
           const isTypo = issue.issueType === "SPELLING_TYPO";
@@ -1664,72 +1674,55 @@ function DetailedGrammarIssuesSection({
           return (
             <div
               key={`${issue.sourceQuote}-${index}`}
-              className="rounded-xl border border-slate-200 bg-slate-50/50 p-4 space-y-3 transition-all hover:border-slate-300"
+              className={index === 0 ? "space-y-2" : "pt-4 space-y-2"}
             >
-              {/* Header: Badges & Index */}
+              {/* Row 1: Direct comparison + badges */}
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <div className="flex flex-wrap items-center gap-2">
-                  {/* Issue Type Badge */}
+                <div className="flex items-center gap-2 flex-wrap text-sm sm:text-base">
+                  <span className="line-through decoration-rose-400 decoration-2 text-rose-700 font-semibold bg-rose-50/80 px-1.5 py-0.5 rounded">
+                    {issue.sourceQuote}
+                  </span>
+                  <span className="text-slate-400 font-bold text-xs">→</span>
+                  <span className="font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200/80">
+                    {issue.correction}
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-1.5 flex-wrap">
                   {isStyle ? (
-                    <span className="rounded-full bg-indigo-50 border border-indigo-200 text-indigo-700 px-2.5 py-0.5 text-[11px] font-bold flex items-center gap-1">
-                      <span>✨</span> Tùy chọn văn phong (Style / Khuyên dùng)
+                    <span className="rounded-full bg-indigo-50 border border-indigo-200 text-indigo-700 px-2 py-0.5 text-[10px] font-bold">
+                      ✨ Tùy chọn văn phong
                     </span>
                   ) : isTypo ? (
-                    <span className="rounded-full bg-amber-50 border border-amber-200 text-amber-800 px-2.5 py-0.5 text-[11px] font-bold flex items-center gap-1">
-                      <span>✏️</span> Lỗi chính tả (Spelling)
+                    <span className="rounded-full bg-amber-50 border border-amber-200 text-amber-800 px-2 py-0.5 text-[10px] font-bold">
+                      ✏️ Lỗi chính tả
                     </span>
                   ) : (
-                    <span className="rounded-full bg-rose-50 border border-rose-200 text-rose-700 px-2.5 py-0.5 text-[11px] font-bold flex items-center gap-1">
-                      <HugeiconsIcon icon={AlertCircleIcon} size={13} />
-                      Lỗi ngữ pháp tuyệt đối (Cần sửa)
+                    <span className="rounded-full bg-rose-50 border border-rose-200 text-rose-700 px-2 py-0.5 text-[10px] font-bold">
+                      Lỗi ngữ pháp
                     </span>
                   )}
-
-                  {/* Word Class Badge */}
                   {issue.wordClass && (
-                    <span className="rounded-full bg-slate-100 border border-slate-200 text-slate-700 px-2.5 py-0.5 text-[11px] font-semibold">
-                      Từ loại: {issue.wordClass}
+                    <span className="rounded-full bg-slate-100 text-slate-600 px-2 py-0.5 text-[10px] font-medium">
+                      {issue.wordClass}
                     </span>
                   )}
                 </div>
-
-                <span className="text-[11px] font-mono text-slate-400">
-                  #{index + 1}
-                </span>
               </div>
 
-              {/* Direct correction row */}
-              <div className="flex items-center gap-2 flex-wrap bg-white rounded-lg p-2.5 border border-slate-200/80">
-                <span className="line-through decoration-rose-400 decoration-2 text-rose-700 font-bold text-sm sm:text-base bg-rose-50 px-2 py-0.5 rounded">
-                  {issue.sourceQuote}
-                </span>
-                <span className="text-slate-400 font-bold text-sm">→</span>
-                <span className="text-emerald-700 font-bold text-sm sm:text-base bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200/80 shadow-2xs">
-                  {issue.correction}
-                </span>
-              </div>
-
-              {/* Grammar reason */}
-              <div className="rounded-lg bg-white border border-slate-200/70 p-3 space-y-1 text-xs sm:text-sm">
-                <p className="font-bold text-slate-800 flex items-center gap-1.5 text-xs uppercase tracking-wider text-muted-foreground">
-                  <span>📖</span> Lý do ngữ pháp:
-                </p>
-                <p className="text-slate-700 leading-relaxed font-normal">
+              {/* Row 2: Explanations without any nested bordered boxes */}
+              <div className="space-y-1 text-xs sm:text-sm text-slate-700 leading-relaxed">
+                <p>
+                  <span className="font-semibold text-slate-900">Lý do: </span>
                   {issue.reasonVi || issue.explanationVi}
                 </p>
-              </div>
-
-              {/* Context & Example */}
-              {issue.contextAndExampleVi && (
-                <div className="rounded-lg bg-sky-50/60 border border-sky-100 p-3 space-y-1 text-xs sm:text-sm">
-                  <p className="font-bold text-sky-900 flex items-center gap-1.5 text-xs uppercase tracking-wider">
-                    <span>💡</span> Ngữ cảnh &amp; Ví dụ:
-                  </p>
-                  <p className="text-sky-950/85 leading-relaxed font-normal">
+                {issue.contextAndExampleVi && (
+                  <p className="text-slate-600 text-xs">
+                    <span className="font-semibold text-sky-800">Ngữ cảnh &amp; ví dụ: </span>
                     {issue.contextAndExampleVi}
                   </p>
-                </div>
-              )}
+                )}
+              </div>
             </div>
           );
         })}
