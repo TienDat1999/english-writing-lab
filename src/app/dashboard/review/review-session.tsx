@@ -4,7 +4,6 @@ import {
   AlertCircleIcon,
   ArrowRight01Icon,
   BookOpen01Icon,
-  CheckmarkCircle02Icon,
   Clock01Icon,
   Copy01Icon,
   Idea01Icon,
@@ -316,6 +315,7 @@ export function ReviewSession({
     itemsCount: number;
     completedCount: number;
   } | null>(null);
+  const [activeNextAction, setActiveNextAction] = useState<(() => void) | null>(null);
 
   // Check LocalStorage on mount
   useEffect(() => {
@@ -773,18 +773,34 @@ export function ReviewSession({
           </span>
         </div>
 
-        <Button
-          onClick={() => {
-            persistProgress(items, results);
-            setIsPaused(true);
-          }}
-          size="sm"
-          variant="outline"
-          className="rounded-xl text-xs h-8 gap-1.5 hover:bg-slate-50"
-        >
-          <HugeiconsIcon icon={PauseIcon} size={14} />
-          <span>Tạm dừng</span>
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            onClick={() => {
+              persistProgress(items, results);
+              setIsPaused(true);
+            }}
+            size="sm"
+            variant="outline"
+            className="rounded-xl text-xs h-8 gap-1.5 hover:bg-slate-50"
+          >
+            <HugeiconsIcon icon={PauseIcon} size={14} />
+            <span>Tạm dừng</span>
+          </Button>
+
+          {activeNextAction && (
+            <Button
+              onClick={activeNextAction}
+              size="sm"
+              className="rounded-xl text-xs h-8 px-3.5 gap-1.5 font-bold shadow-sm"
+            >
+              <span>Tiếp tục</span>
+              <kbd className="hidden sm:inline-block rounded bg-primary-foreground/20 px-1.5 py-0.5 text-[10px] font-mono leading-none">
+                ↵
+              </kbd>
+              <HugeiconsIcon icon={ArrowRight01Icon} size={14} />
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Progress Bar */}
@@ -801,6 +817,7 @@ export function ReviewSession({
           item={item}
           key={`${item.id}-${attemptNumber}`}
           onNext={goToNextItem}
+          setActiveNextAction={setActiveNextAction}
         />
       ) : isTranslation && evaluation ? (
         <TranslationResult
@@ -822,6 +839,7 @@ export function ReviewSession({
           onPhraseSaved={addPhraseToSession}
           sourceText={item.promptText}
           sourceLearningItemId={item.id}
+          setActiveNextAction={setActiveNextAction}
         />
       ) : (
         <Card className="border border-slate-200/90 bg-white shadow-sm rounded-2xl overflow-hidden">
@@ -946,9 +964,11 @@ export function ReviewSession({
 function WritingTemplatePractice({
   item,
   onNext,
+  setActiveNextAction,
 }: {
   item: LearningItemView;
   onNext: (shouldRepeat: boolean, record?: { isCorrect: boolean; userDraft?: string }) => void;
+  setActiveNextAction?: (action: (() => void) | null) => void;
 }) {
   const [draft, setDraft] = useState("");
   const [evaluation, setEvaluation] = useState<TranslationEvaluation | null>(null);
@@ -1002,6 +1022,7 @@ function WritingTemplatePractice({
         nextLabel="Tiếp tục"
         onNext={() => onNext(shouldRepeat, { isCorrect: !shouldRepeat, userDraft: draft })}
         sourceText={item.applicationPromptVi}
+        setActiveNextAction={setActiveNextAction}
       />
     );
   }
@@ -1338,6 +1359,7 @@ function TranslationResult({
   onPhraseSaved,
   sourceText,
   sourceLearningItemId,
+  setActiveNextAction,
 }: {
   evaluation: TranslationEvaluation;
   learnerAnswer: string;
@@ -1347,8 +1369,17 @@ function TranslationResult({
   onPhraseSaved?: (item: LearningItemView) => void;
   sourceText?: string;
   sourceLearningItemId?: string;
+  setActiveNextAction?: (action: (() => void) | null) => void;
 }) {
   const tier = getScoreTier(evaluation.score);
+
+  // Register next action for session header
+  useEffect(() => {
+    if (setActiveNextAction) {
+      setActiveNextAction(() => onNext);
+      return () => setActiveNextAction(null);
+    }
+  }, [onNext, setActiveNextAction]);
 
   // Keyboard shortcut listener: Enter to continue
   useEffect(() => {
@@ -1365,12 +1396,6 @@ function TranslationResult({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [onNext]);
 
-  const hasError =
-    evaluation.score < 70 ||
-    evaluation.meaningScore < 70 ||
-    evaluation.grammarScore < 70 ||
-    Boolean(evaluation.grammarIssues && evaluation.grammarIssues.length > 0);
-
   const hasUpgrade = Boolean(
     evaluation.upgradedTranslation &&
     evaluation.upgradedTranslation !== evaluation.correctedTranslation
@@ -1379,11 +1404,11 @@ function TranslationResult({
 
   return (
     <div className="space-y-3.5 animate-in fade-in-50 duration-300" aria-live="polite">
-      {/* Top Horizontal Bar: Đề bài gốc | Điểm số & 3 metrics | Nút tiếp tục & Trạng thái */}
-      <div className="rounded-2xl border border-slate-200/90 bg-white p-3.5 sm:p-4 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-3.5">
+      {/* Top Horizontal Bar: Đề bài gốc (Left) | Điểm số & 3 metrics (Right) */}
+      <div className="rounded-2xl border border-slate-200/90 bg-white p-3.5 sm:p-4 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3.5">
         {/* Left: Đề bài gốc */}
         {sourceText ? (
-          <div className="min-w-0 md:max-w-md lg:max-w-lg xl:max-w-xl space-y-0.5">
+          <div className="min-w-0 flex-1 space-y-0.5">
             <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
               Đề bài gốc
             </span>
@@ -1393,51 +1418,66 @@ function TranslationResult({
           </div>
         ) : null}
 
-        {/* Center: Score + 3 Metric Pills */}
-        <div className="flex items-center gap-3 shrink-0 flex-wrap sm:flex-nowrap">
-          {/* Score Box */}
-          <div className="flex items-center gap-2.5 rounded-xl bg-slate-50 border border-slate-200 px-3 py-1.5 shadow-2xs">
-            <div className="flex flex-col items-center justify-center">
-              <span className="text-[8px] font-bold uppercase tracking-wider text-slate-400 leading-none">
-                Điểm
-              </span>
-              <p className={`font-mono text-2xl font-black leading-none mt-0.5 ${tier.scoreClass}`}>
-                {evaluation.score}
-              </p>
-              <span className="text-[8px] text-slate-400 font-mono leading-none mt-0.5">/ 100</span>
+        {/* Right: Score + 3 Metric Pills with Interactive Tooltips */}
+        <div className="flex items-center gap-2.5 rounded-xl bg-slate-50 border border-slate-200 px-3 py-1.5 shadow-2xs shrink-0 self-start sm:self-auto">
+          <div className="flex flex-col items-center justify-center">
+            <span className="text-[8px] font-bold uppercase tracking-wider text-slate-400 leading-none">
+              Điểm
+            </span>
+            <p className={`font-mono text-2xl font-black leading-none mt-0.5 ${tier.scoreClass}`}>
+              {evaluation.score}
+            </p>
+            <span className="text-[8px] text-slate-400 font-mono leading-none mt-0.5">/ 100</span>
+          </div>
+
+          {/* 3 Metric Pills with Hover Tooltips */}
+          <div className="flex items-center gap-1.5 pl-2.5 border-l border-slate-200">
+            {/* Metric 1: Functional / Meaning */}
+            <div
+              className="group relative flex items-center gap-1 py-1 px-1.5 rounded-lg bg-white border border-slate-200/80 hover:border-emerald-300 hover:bg-emerald-50/40 transition-all cursor-help"
+              title={`${meaningLabel}: ${evaluation.meaningScore}%`}
+            >
+              <HugeiconsIcon icon={Target01Icon} size={14} className="text-emerald-600 shrink-0" />
+              <span className="font-mono text-xs font-bold text-slate-800">{evaluation.meaningScore}%</span>
+
+              {/* Hover Tooltip */}
+              <div className="pointer-events-none absolute -bottom-8 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-md bg-slate-900 px-2 py-0.5 text-[10px] font-medium text-white shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-150 z-30">
+                {meaningLabel}: {evaluation.meaningScore}%
+              </div>
             </div>
 
-            {/* 3 Metric Pills with Icons */}
-            <div className="flex items-center gap-1.5 pl-2.5 border-l border-slate-200">
-              <div
-                className="flex items-center gap-1 py-1 px-1.5 rounded-lg bg-white border border-slate-200/70"
-                title={`${meaningLabel}: ${evaluation.meaningScore}%`}
-              >
-                <HugeiconsIcon icon={Target01Icon} size={13} className="text-emerald-600 shrink-0" />
-                <span className="font-mono text-xs font-bold text-slate-800">{evaluation.meaningScore}%</span>
-              </div>
+            {/* Metric 2: Grammar */}
+            <div
+              className="group relative flex items-center gap-1 py-1 px-1.5 rounded-lg bg-white border border-slate-200/80 hover:border-sky-300 hover:bg-sky-50/40 transition-all cursor-help"
+              title={`Ngữ pháp: ${evaluation.grammarScore}%`}
+            >
+              <HugeiconsIcon icon={PencilEdit02Icon} size={14} className="text-sky-600 shrink-0" />
+              <span className="font-mono text-xs font-bold text-slate-800">{evaluation.grammarScore}%</span>
 
-              <div
-                className="flex items-center gap-1 py-1 px-1.5 rounded-lg bg-white border border-slate-200/70"
-                title={`Ngữ pháp: ${evaluation.grammarScore}%`}
-              >
-                <HugeiconsIcon icon={PencilEdit02Icon} size={13} className="text-sky-600 shrink-0" />
-                <span className="font-mono text-xs font-bold text-slate-800">{evaluation.grammarScore}%</span>
+              {/* Hover Tooltip */}
+              <div className="pointer-events-none absolute -bottom-8 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-md bg-slate-900 px-2 py-0.5 text-[10px] font-medium text-white shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-150 z-30">
+                Ngữ pháp: {evaluation.grammarScore}%
               </div>
+            </div>
 
-              <div
-                className="flex items-center gap-1 py-1 px-1.5 rounded-lg bg-white border border-slate-200/70"
-                title={`Tự nhiên: ${evaluation.naturalnessScore}%`}
-              >
-                <HugeiconsIcon icon={SparklesIcon} size={13} className="text-amber-500 shrink-0" />
-                <span className="font-mono text-xs font-bold text-slate-800">{evaluation.naturalnessScore}%</span>
+            {/* Metric 3: Naturalness */}
+            <div
+              className="group relative flex items-center gap-1 py-1 px-1.5 rounded-lg bg-white border border-slate-200/80 hover:border-amber-300 hover:bg-amber-50/40 transition-all cursor-help"
+              title={`Độ tự nhiên: ${evaluation.naturalnessScore}%`}
+            >
+              <HugeiconsIcon icon={SparklesIcon} size={14} className="text-amber-500 shrink-0" />
+              <span className="font-mono text-xs font-bold text-slate-800">{evaluation.naturalnessScore}%</span>
+
+              {/* Hover Tooltip */}
+              <div className="pointer-events-none absolute -bottom-8 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-md bg-slate-900 px-2 py-0.5 text-[10px] font-medium text-white shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-150 z-30">
+                Độ tự nhiên: {evaluation.naturalnessScore}%
               </div>
             </div>
           </div>
         </div>
 
-        {/* Right: Actions (Next button + repeat status) */}
-        <div className="flex flex-col sm:items-end justify-center gap-1 shrink-0">
+        {/* Fallback button if setActiveNextAction not provided */}
+        {!setActiveNextAction && (
           <Button
             onClick={onNext}
             size="lg"
@@ -1449,19 +1489,7 @@ function TranslationResult({
             </kbd>
             <HugeiconsIcon icon={ArrowRight01Icon} size={15} />
           </Button>
-
-          {hasError ? (
-            <p className="text-[11px] text-amber-700 flex items-center gap-1 font-medium">
-              <HugeiconsIcon icon={RefreshIcon} size={11} />
-              <span>Ôn lại khi hết vòng</span>
-            </p>
-          ) : (
-            <p className="text-[11px] text-emerald-700 flex items-center gap-1 font-medium">
-              <HugeiconsIcon icon={CheckmarkCircle02Icon} size={11} />
-              <span>Hoàn thành xuất sắc</span>
-            </p>
-          )}
-        </div>
+        )}
       </div>
 
       {/* Main Content Area: Full width, stacked cleanly */}
