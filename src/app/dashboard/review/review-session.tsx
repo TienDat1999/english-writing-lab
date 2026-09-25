@@ -9,9 +9,11 @@ import {
   Copy01Icon,
   Idea01Icon,
   PauseIcon,
+  PencilEdit02Icon,
   PlayIcon,
   RefreshIcon,
   SparklesIcon,
+  Target01Icon,
   Tick02Icon,
   VolumeHighIcon,
 } from "@hugeicons/core-free-icons";
@@ -194,26 +196,67 @@ function CopyButton({ text, className }: { text: string; className?: string }) {
   );
 }
 
-function MetricRow({ label, score }: { label: string; score: number }) {
-  const tierColor =
-    score >= 75
-      ? { text: "text-emerald-700", bar: "bg-emerald-500" }
-      : score >= 50
-        ? { text: "text-amber-700", bar: "bg-amber-500" }
-        : { text: "text-rose-700", bar: "bg-rose-500" };
+function TemplatePatternSection({
+  patternTipVi,
+  paraphraseExampleEn,
+}: {
+  patternTipVi: string;
+  paraphraseExampleEn?: string;
+}) {
+  const patternInfo = parsePatternTip(patternTipVi);
 
   return (
-    <div className="space-y-1.5">
-      <div className="flex items-center justify-between text-xs">
-        <span className="font-medium text-slate-600">{label}</span>
-        <span className={`font-mono font-bold text-xs ${tierColor.text}`}>{score}%</span>
+    <div className="rounded-xl border border-amber-200/80 bg-amber-50/40 p-3 sm:p-3.5 space-y-2.5 flex flex-col justify-between">
+      <div className="space-y-2">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-1.5 text-amber-900">
+            <HugeiconsIcon icon={Idea01Icon} size={15} className="text-amber-700" />
+            <span className="text-[11px] font-bold tracking-wider uppercase">Cấu trúc cốt lõi</span>
+          </div>
+          <CopyButton text={patternInfo.pattern} />
+        </div>
+
+        <div className="rounded-lg border border-amber-200/70 bg-white p-2.5 space-y-1.5">
+          <div className="text-xs sm:text-sm font-semibold text-slate-900 leading-snug">
+            {patternInfo.tokens.map((token, i) => {
+              if (token.startsWith("[") && token.endsWith("]")) {
+                return (
+                  <span
+                    key={i}
+                    className="inline-block mx-0.5 px-1.5 py-0.5 rounded bg-amber-100 text-amber-900 font-mono text-[11px] font-bold border border-amber-300/80"
+                  >
+                    {token}
+                  </span>
+                );
+              }
+              return <span key={i}>{token}</span>;
+            })}
+          </div>
+
+          {patternInfo.explanation && (
+            <p className="text-[11px] text-amber-950/80 leading-relaxed border-t border-amber-100 pt-1.5">
+              💡 {patternInfo.explanation}
+            </p>
+          )}
+        </div>
       </div>
-      <div className="h-1.5 w-full rounded-full bg-slate-100 overflow-hidden">
-        <div
-          className={`h-full rounded-full transition-all duration-500 ${tierColor.bar}`}
-          style={{ width: `${Math.max(5, Math.min(100, score))}%` }}
-        />
-      </div>
+
+      {paraphraseExampleEn && (
+        <div className="rounded-lg border border-amber-200/60 bg-white/80 p-2 space-y-1">
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-[9px] font-bold uppercase tracking-wider text-amber-800">
+              Ví dụ áp dụng thực tế
+            </span>
+            <div className="flex items-center gap-1">
+              <PronounceButton text={paraphraseExampleEn} />
+              <CopyButton text={paraphraseExampleEn} />
+            </div>
+          </div>
+          <p className="text-xs font-medium text-slate-800 leading-relaxed">
+            {paraphraseExampleEn}
+          </p>
+        </div>
+      )}
     </div>
   );
 }
@@ -1233,11 +1276,11 @@ function VocabularyUpgradeTable({
   if (!upgrades || upgrades.length === 0) return null;
 
   return (
-    <div className="rounded-xl border border-slate-200/90 bg-white p-4 sm:p-5 space-y-3.5 shadow-2xs">
+    <div className="rounded-xl border border-slate-200/90 bg-white p-3.5 sm:p-4 space-y-2.5 shadow-2xs">
       <div className="flex items-center justify-between gap-2">
-        <h4 className="font-heading text-sm sm:text-base font-bold text-slate-900 leading-snug">
+        <h4 className="font-heading text-sm font-bold text-slate-900 leading-snug">
           Gợi ý từ vựng nâng cao{" "}
-          <span className="text-xs sm:text-sm font-normal text-slate-500 font-sans">
+          <span className="text-xs font-normal text-slate-500 font-sans">
             (B2 / C1 - Học thuật & Tự nhiên)
           </span>
         </h4>
@@ -1247,11 +1290,11 @@ function VocabularyUpgradeTable({
       </div>
 
       <div className="overflow-x-auto rounded-lg border border-slate-200/80 bg-white">
-        <table className="w-full text-left text-xs sm:text-sm border-collapse">
+        <table className="w-full text-left text-xs sm:text-[13px] border-collapse">
           <thead>
             <tr className="border-b border-slate-200/80 bg-slate-50/80 text-slate-700">
-              <th className="py-2.5 px-4 font-bold w-1/3 sm:w-1/4">Từ gốc trong bài</th>
-              <th className="py-2.5 px-4 font-bold">Gợi ý từ vựng nâng cao</th>
+              <th className="py-2 px-3 font-bold w-1/3 sm:w-1/4">Từ gốc trong bài</th>
+              <th className="py-2 px-3 font-bold">Gợi ý từ vựng nâng cao</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
@@ -1261,14 +1304,14 @@ function VocabularyUpgradeTable({
                 className="hover:bg-slate-50/40 transition-colors"
                 title={item.reasonVi}
               >
-                <td className="py-3 px-4 font-bold text-slate-950 align-middle">
-                  <span className="inline-block bg-slate-100 text-slate-800 px-2.5 py-1 rounded font-mono text-xs sm:text-[13px] border border-slate-200/70">
+                <td className="py-2 px-3 font-bold text-slate-950 align-middle">
+                  <span className="inline-block bg-slate-100 text-slate-800 px-2 py-0.5 rounded font-mono text-xs border border-slate-200/70">
                     {item.originalWord}
                   </span>
                 </td>
-                <td className="py-3 px-4 italic text-slate-900 align-middle">
-                  <div className="flex items-center justify-between gap-3">
-                    <span className="leading-relaxed font-medium text-sm sm:text-base">
+                <td className="py-2 px-3 italic text-slate-900 align-middle">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="leading-relaxed font-medium text-xs sm:text-sm">
                       {item.upgradedAlternatives}
                     </span>
                     <div className="flex items-center gap-1 not-italic shrink-0">
@@ -1306,7 +1349,6 @@ function TranslationResult({
   sourceLearningItemId?: string;
 }) {
   const tier = getScoreTier(evaluation.score);
-  const patternInfo = parsePatternTip(evaluation.patternTipVi);
 
   // Keyboard shortcut listener: Enter to continue
   useEffect(() => {
@@ -1323,71 +1365,105 @@ function TranslationResult({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [onNext]);
 
-  const scoreCards = [
-    [meaningLabel, evaluation.meaningScore],
-    ["Ngữ pháp", evaluation.grammarScore],
-    ["Tự nhiên", evaluation.naturalnessScore],
-  ] as const;
-
   const hasError =
     evaluation.score < 70 ||
     evaluation.meaningScore < 70 ||
     evaluation.grammarScore < 70 ||
     Boolean(evaluation.grammarIssues && evaluation.grammarIssues.length > 0);
 
+  const hasUpgrade = Boolean(
+    evaluation.upgradedTranslation &&
+    evaluation.upgradedTranslation !== evaluation.correctedTranslation
+  );
+  const hasPattern = Boolean(evaluation.patternTipVi);
+
   return (
-    <div className="grid gap-6 lg:grid-cols-12 lg:items-start animate-in fade-in-50 duration-300" aria-live="polite">
-      {/* Panel 1: Left 5 cols (Assessment & Actions, sticky on desktop) */}
-      <div className="lg:col-span-5 rounded-2xl border border-slate-200/90 bg-white p-5 sm:p-6 shadow-sm space-y-5 lg:sticky lg:top-4">
+    <div className="grid gap-4 lg:grid-cols-12 lg:items-start animate-in fade-in-50 duration-300" aria-live="polite">
+      {/* Panel 1: Left 4 cols on desktop (Assessment, Metrics with Icons, Actions) */}
+      <div className="lg:col-span-4 rounded-2xl border border-slate-200/90 bg-white p-4 sm:p-5 shadow-sm space-y-3.5 lg:sticky lg:top-4">
         {sourceText ? (
-          <div className="space-y-1">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block">
+          <div className="rounded-xl border border-slate-200/80 bg-slate-50/70 p-3 space-y-1">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
               Đề bài gốc
             </span>
-            <p className="text-slate-800 font-medium text-sm leading-relaxed">
+            <p className="text-slate-800 font-medium text-xs sm:text-[13px] leading-relaxed">
               &ldquo;{sourceText}&rdquo;
             </p>
           </div>
         ) : null}
 
-        {/* Score Row */}
-        <div className="rounded-xl border border-slate-200/80 bg-slate-50/70 p-4 flex items-center gap-3.5">
-          <div className="flex flex-col items-center justify-center rounded-xl bg-white border border-slate-200 px-3.5 py-2 min-w-[4.8rem] shadow-2xs shrink-0">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-              Điểm số
-            </span>
-            <p className={`font-mono text-3xl font-black leading-none mt-1 ${tier.scoreClass}`}>
-              {evaluation.score}
-            </p>
-            <span className="text-[10px] text-slate-400 font-mono mt-0.5">/ 100</span>
+        {/* Score & AI Feedback + 3 Icon Metrics */}
+        <div className="rounded-xl border border-slate-200/80 bg-slate-50/70 p-3.5 space-y-2.5">
+          <div className="flex items-center gap-3">
+            <div className="flex flex-col items-center justify-center rounded-xl bg-white border border-slate-200 px-3 py-1.5 min-w-[4.4rem] shadow-2xs shrink-0">
+              <span className="text-[9px] font-bold uppercase tracking-wider text-slate-400">
+                Điểm số
+              </span>
+              <p className={`font-mono text-2xl sm:text-3xl font-black leading-none mt-0.5 ${tier.scoreClass}`}>
+                {evaluation.score}
+              </p>
+              <span className="text-[9px] text-slate-400 font-mono">/ 100</span>
+            </div>
+
+            <div className="min-w-0 flex-1">
+              <p className="text-xs text-slate-700 leading-relaxed font-medium">
+                {evaluation.feedbackVi}
+              </p>
+            </div>
           </div>
 
-          <div className="min-w-0 flex-1">
-            <p className="text-xs sm:text-sm font-medium text-slate-700 leading-relaxed">
-              {evaluation.feedbackVi}
-            </p>
+          {/* 3 Metric Pills with Icons (Replaces heavy progress bars) */}
+          <div className="grid grid-cols-3 gap-1.5 pt-2 border-t border-slate-200/60">
+            <div
+              className="flex items-center justify-between gap-1 py-1 px-1.5 rounded-lg bg-white border border-slate-200/60"
+              title={`${meaningLabel}: ${evaluation.meaningScore}%`}
+            >
+              <div className="flex items-center gap-1 min-w-0">
+                <HugeiconsIcon icon={Target01Icon} size={13} className="text-emerald-600 shrink-0" />
+                <span className="text-[10px] font-semibold text-slate-600 truncate">
+                  {meaningLabel === "Đúng chức năng" ? "Chức năng" : meaningLabel}
+                </span>
+              </div>
+              <span className="font-mono text-[11px] font-bold text-slate-900 shrink-0">
+                {evaluation.meaningScore}%
+              </span>
+            </div>
+
+            <div
+              className="flex items-center justify-between gap-1 py-1 px-1.5 rounded-lg bg-white border border-slate-200/60"
+              title={`Ngữ pháp: ${evaluation.grammarScore}%`}
+            >
+              <div className="flex items-center gap-1 min-w-0">
+                <HugeiconsIcon icon={PencilEdit02Icon} size={13} className="text-sky-600 shrink-0" />
+                <span className="text-[10px] font-semibold text-slate-600 truncate">Ngữ pháp</span>
+              </div>
+              <span className="font-mono text-[11px] font-bold text-slate-900 shrink-0">
+                {evaluation.grammarScore}%
+              </span>
+            </div>
+
+            <div
+              className="flex items-center justify-between gap-1 py-1 px-1.5 rounded-lg bg-white border border-slate-200/60"
+              title={`Tự nhiên: ${evaluation.naturalnessScore}%`}
+            >
+              <div className="flex items-center gap-1 min-w-0">
+                <HugeiconsIcon icon={SparklesIcon} size={13} className="text-amber-500 shrink-0" />
+                <span className="text-[10px] font-semibold text-slate-600 truncate">Tự nhiên</span>
+              </div>
+              <span className="font-mono text-[11px] font-bold text-slate-900 shrink-0">
+                {evaluation.naturalnessScore}%
+              </span>
+            </div>
           </div>
         </div>
 
-        {/* 3 Metric Rows */}
-        <div className="space-y-2.5 pt-1">
-          <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block">
-            Đánh giá chi tiết
-          </span>
-          <div className="space-y-2">
-            {scoreCards.map(([label, score]) => (
-              <MetricRow key={label} label={label} score={score} />
-            ))}
-          </div>
-        </div>
-
-        {/* Actions: Always visible on desktop without scrolling! */}
-        <div className="pt-2 space-y-2 border-t border-slate-100">
+        {/* Actions: Next button & status */}
+        <div className="pt-1 space-y-2 border-t border-slate-100">
           <div className="flex gap-2">
             <Button
               onClick={onNext}
               size="lg"
-              className="w-full rounded-xl font-bold h-11 text-sm gap-2 shadow-sm"
+              className="w-full rounded-xl font-bold h-10 sm:h-11 text-sm gap-2 shadow-sm"
             >
               <span>{nextLabel}</span>
               <kbd className="hidden sm:inline-block rounded bg-primary-foreground/20 px-1.5 py-0.5 text-[10px] font-mono leading-none">
@@ -1399,13 +1475,13 @@ function TranslationResult({
 
           <div className="text-center">
             {hasError ? (
-              <p className="text-xs text-amber-700 flex items-center justify-center gap-1.5 font-medium">
-                <HugeiconsIcon icon={RefreshIcon} size={13} />
+              <p className="text-[11px] text-amber-700 flex items-center justify-center gap-1 font-medium">
+                <HugeiconsIcon icon={RefreshIcon} size={12} />
                 <span>Câu này sẽ xuất hiện lại sau khi hết vòng để bạn ôn lại</span>
               </p>
             ) : (
-              <p className="text-xs text-emerald-700 flex items-center justify-center gap-1.5 font-medium">
-                <HugeiconsIcon icon={CheckmarkCircle02Icon} size={13} />
+              <p className="text-[11px] text-emerald-700 flex items-center justify-center gap-1 font-medium">
+                <HugeiconsIcon icon={CheckmarkCircle02Icon} size={12} />
                 <span>Tuyệt vời! Đã hoàn thành câu này.</span>
               </p>
             )}
@@ -1413,9 +1489,9 @@ function TranslationResult({
         </div>
       </div>
 
-      {/* Panel 2: Right 7 cols (Sentences & Template Material) */}
-      <div className="lg:col-span-7 rounded-2xl border border-slate-200/90 bg-white p-5 sm:p-6 shadow-sm space-y-4">
-        {/* Full width stacked answers: Learner Answer -> Optimal B2 Answer */}
+      {/* Panel 2: Right 8 cols (Sentences & Template Material) */}
+      <div className="lg:col-span-8 rounded-2xl border border-slate-200/90 bg-white p-4 sm:p-5 shadow-sm space-y-3.5">
+        {/* Full width stacked answers: Learner Answer with inline correction */}
         <AnswerCard
           label="Bản viết của bạn"
           text={learnerAnswer}
@@ -1432,15 +1508,41 @@ function TranslationResult({
           <DetailedGrammarIssuesSection issues={evaluation.grammarIssues} />
         )}
 
-        {/* B2 Natural Upgrade */}
-        {evaluation.upgradedTranslation && evaluation.upgradedTranslation !== evaluation.correctedTranslation && (
-          <AnswerCard
-            label="Gợi ý cách viết B2 tự nhiên hơn"
-            onPhraseSaved={onPhraseSaved}
-            sourceLearningItemId={sourceLearningItemId}
-            text={evaluation.upgradedTranslation}
-            variant="upgrade"
-          />
+        {/* B2 Natural Upgrade & Template Pattern Subgrid */}
+        {hasUpgrade && hasPattern ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 items-stretch">
+            <AnswerCard
+              label="Gợi ý viết B2 tự nhiên hơn"
+              onPhraseSaved={onPhraseSaved}
+              sourceLearningItemId={sourceLearningItemId}
+              text={evaluation.upgradedTranslation!}
+              variant="upgrade"
+            />
+
+            <TemplatePatternSection
+              patternTipVi={evaluation.patternTipVi!}
+              paraphraseExampleEn={evaluation.paraphraseExampleEn}
+            />
+          </div>
+        ) : (
+          <>
+            {hasUpgrade && (
+              <AnswerCard
+                label="Gợi ý cách viết B2 tự nhiên hơn"
+                onPhraseSaved={onPhraseSaved}
+                sourceLearningItemId={sourceLearningItemId}
+                text={evaluation.upgradedTranslation!}
+                variant="upgrade"
+              />
+            )}
+
+            {hasPattern && (
+              <TemplatePatternSection
+                patternTipVi={evaluation.patternTipVi!}
+                paraphraseExampleEn={evaluation.paraphraseExampleEn}
+              />
+            )}
+          </>
         )}
 
         {/* Vocabulary Upgrades Comparison Table (For Essay/IELTS) */}
@@ -1465,60 +1567,6 @@ function TranslationResult({
           if (genuineUpgrades.length === 0) return null;
           return <VocabularyUpgradeTable upgrades={genuineUpgrades} />;
         })()}
-
-        {/* Template Pattern Formula & Practical Example */}
-        {evaluation.patternTipVi && (
-          <div className="rounded-xl border border-amber-200/80 bg-amber-50/40 p-4 sm:p-5 space-y-3">
-            <div className="flex items-center justify-between gap-2">
-              <div className="flex items-center gap-2 text-amber-900">
-                <HugeiconsIcon icon={Idea01Icon} size={16} className="text-amber-700" />
-                <span className="text-xs font-bold tracking-wider uppercase">Cấu trúc template cốt lõi</span>
-              </div>
-              <CopyButton text={patternInfo.pattern} />
-            </div>
-
-            <div className="rounded-lg border border-amber-200/70 bg-white p-3.5 space-y-2">
-              <div className="text-sm sm:text-base font-semibold text-slate-900 leading-relaxed">
-                {patternInfo.tokens.map((token, i) => {
-                  if (token.startsWith("[") && token.endsWith("]")) {
-                    return (
-                      <span
-                        key={i}
-                        className="inline-block mx-1 px-2 py-0.5 rounded-md bg-amber-100 text-amber-900 font-mono text-xs font-bold border border-amber-300/80"
-                      >
-                        {token}
-                      </span>
-                    );
-                  }
-                  return <span key={i}>{token}</span>;
-                })}
-              </div>
-
-              {patternInfo.explanation && (
-                <p className="text-xs text-amber-950/80 leading-relaxed border-t border-amber-100 pt-2">
-                  💡 {patternInfo.explanation}
-                </p>
-              )}
-            </div>
-
-            {evaluation.paraphraseExampleEn && (
-              <div className="rounded-lg border border-amber-200/60 bg-white/80 p-3 space-y-1.5">
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-amber-800">
-                    Ví dụ áp dụng thực tế
-                  </span>
-                  <div className="flex items-center gap-1">
-                    <PronounceButton text={evaluation.paraphraseExampleEn} />
-                    <CopyButton text={evaluation.paraphraseExampleEn} />
-                  </div>
-                </div>
-                <p className="text-sm font-medium text-slate-800 leading-relaxed">
-                  {evaluation.paraphraseExampleEn}
-                </p>
-              </div>
-            )}
-          </div>
-        )}
       </div>
     </div>
   );
@@ -1630,22 +1678,22 @@ function DetailedGrammarIssuesSection({
   if (!issues || issues.length === 0) return null;
 
   return (
-    <div className="rounded-2xl border border-slate-200/90 bg-white p-5 sm:p-6 shadow-sm space-y-4">
-      <div className="flex items-center justify-between gap-2 border-b border-slate-100 pb-3">
+    <div className="rounded-xl border border-slate-200/90 bg-white p-3.5 sm:p-4 shadow-sm space-y-3">
+      <div className="flex items-center justify-between gap-2 border-b border-slate-100 pb-2.5">
         <div className="flex items-center gap-2">
-          <div className="grid size-7 place-items-center rounded-lg bg-rose-50 text-rose-600 font-bold">
-            <HugeiconsIcon icon={AlertCircleIcon} size={16} />
+          <div className="grid size-6 place-items-center rounded-md bg-rose-50 text-rose-600 font-bold">
+            <HugeiconsIcon icon={AlertCircleIcon} size={15} />
           </div>
-          <h4 className="font-heading text-sm sm:text-base font-bold text-slate-900 leading-snug">
+          <h4 className="font-heading text-sm font-bold text-slate-900 leading-snug">
             Điểm cần sửa ({issues.length})
           </h4>
         </div>
-        <span className="text-xs text-muted-foreground font-medium">
+        <span className="text-[11px] text-muted-foreground font-medium">
           Gợi ý sửa &amp; phân tích ngữ pháp
         </span>
       </div>
 
-      <div className="divide-y divide-slate-100 space-y-4">
+      <div className="divide-y divide-slate-100 space-y-3">
         {issues.map((issue, index) => {
           const isStyle = issue.issueType === "STYLE_SUGGESTION";
           const isTypo = issue.issueType === "SPELLING_TYPO";
@@ -1653,7 +1701,7 @@ function DetailedGrammarIssuesSection({
           return (
             <div
               key={`${issue.sourceQuote}-${index}`}
-              className={index === 0 ? "space-y-2" : "pt-4 space-y-2"}
+              className={index === 0 ? "space-y-1.5" : "pt-3 space-y-1.5"}
             >
               {/* Row 1: Direct comparison + badges */}
               <div className="flex flex-wrap items-center justify-between gap-2">
@@ -1797,12 +1845,12 @@ function AnswerCard({
 
   return (
     <div
-      className={`rounded-xl border p-4 sm:p-5 transition-all ${styles.card}`}
+      className={`rounded-xl border p-3.5 sm:p-4 transition-all ${styles.card}`}
       onMouseUp={captureSelection}
     >
-      <div className="flex items-center justify-between gap-2 mb-2 flex-wrap">
+      <div className="flex items-center justify-between gap-2 mb-1.5 flex-wrap">
         <div className="flex items-center gap-2">
-          <span className={`text-xs font-bold tracking-wider uppercase ${styles.label}`}>
+          <span className={`text-[11px] font-bold tracking-wider uppercase ${styles.label}`}>
             {label}
           </span>
           <span className={`rounded-full border px-2 py-0.5 text-[10px] font-bold ${styles.badge}`}>
@@ -1820,7 +1868,7 @@ function AnswerCard({
               variant="ghost"
               size="sm"
               onClick={() => setShowRaw(!showRaw)}
-              className="h-6 text-[11px] px-2 text-muted-foreground hover:text-foreground font-semibold"
+              className="h-6 text-[10px] px-2 text-muted-foreground hover:text-foreground font-semibold"
             >
               {showRaw ? "Xem sửa trực tiếp" : "Xem câu gốc"}
             </Button>
@@ -1834,7 +1882,7 @@ function AnswerCard({
         </div>
       </div>
 
-      <div className="cursor-text select-text whitespace-pre-wrap text-base sm:text-[17px] font-medium leading-relaxed text-slate-900">
+      <div className="cursor-text select-text whitespace-pre-wrap text-sm sm:text-base font-medium leading-relaxed text-slate-900">
         {variant === "learner" && hasIssues && !showRaw
           ? renderAnnotatedAnswer(text, issues)
           : text}
