@@ -2,9 +2,30 @@ import type { ScoreTier } from "./types";
 
 export function parsePatternTip(raw: string) {
   if (!raw) return { pattern: "", explanation: "", tokens: [] as string[] };
-  const match = raw.match(/^(.*?)(?:\s*\(([^()]+)\))\s*$/);
-  const pattern = match ? match[1].trim() : raw.trim();
-  const explanation = match ? match[2].trim() : "";
+  let cleaned = raw.trim();
+  // Strip leading "Cấu trúc:" or "Cấu trúc "
+  cleaned = cleaned.replace(/^Cấu trúc\s*[:\-\s]*/i, "");
+
+  let pattern = cleaned;
+  let explanation = "";
+
+  // Check format: "pattern" followed by explanation or (explanation)
+  const quoteMatch = cleaned.match(/^"([^"]+)"\s*(.*)$/);
+  if (quoteMatch) {
+    pattern = quoteMatch[1].trim();
+    explanation = quoteMatch[2].replace(/^\((.*)\)$/, "$1").trim();
+  } else {
+    // Check format: pattern (explanation)
+    const parenMatch = cleaned.match(/^(.*?)(?:\s*\(([^()]+)\))\s*$/);
+    if (parenMatch) {
+      pattern = parenMatch[1].trim();
+      explanation = parenMatch[2].trim();
+    }
+  }
+
+  // Clean any leading punctuation from explanation
+  explanation = explanation.replace(/^[.\-:\s]+/, "").trim();
+
   const tokens = pattern.split(/(\[[^\]]+\])/g).filter(Boolean);
   return { pattern, explanation, tokens };
 }

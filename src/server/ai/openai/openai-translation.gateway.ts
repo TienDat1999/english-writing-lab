@@ -199,15 +199,19 @@ export class OpenAiTranslationReviewGateway implements ITranslationReviewGateway
           input.requiredPhrase
             ? `Both correctedTranslation and upgradedTranslation must contain the required phrase: ${input.requiredPhrase}`
             : isWritingTemplate
-              ? "upgradedTranslation should provide a strong natural B2 alternative that fulfils the same function and example without using placeholders."
+              ? "upgradedTranslation should provide a strong natural B2 alternative that translates the Vietnamese source and faithfully adheres to the reusable template pattern without using bracketed placeholders."
               : "upgradedTranslation should provide a natural B2 academic alternative with a reusable sentence pattern.",
           "writingAlternatives: Provide 2 to 3 natural, professional ways to write the sentence in English, categorized as follows:",
           "1) label: 'Gọn gàng, tự nhiên nhất (thường dùng trong email/giao tiếp công việc hàng ngày):', sentenceEn: natural concise sentence, noteVi: brief Vietnamese note (e.g. key verb or nuance like '(Dùng động từ finalize – chốt/đưa ra quyết định cuối cùng về ngân sách)').",
           "2) label: 'Bám sát cấu trúc gốc nhưng gãy gọn hơn:', sentenceEn: sentence preserving the target phrase or core idea cleanly, noteVi: optional brief note.",
           "3) label: 'Trang trọng hơn (phù hợp với biên bản họp, văn bản quản lý):', sentenceEn: formal executive or academic sentence (e.g. using formal verbs/phrasings like reach a decision / regarding), noteVi: optional brief note.",
           "Write feedback, explanations, and noteVi in concise Vietnamese.",
-          "patternTipVi must contain a reusable English sentence pattern with clear placeholders in square brackets, followed by one brief Vietnamese explanation.",
-          "paraphraseExampleEn must be one complete natural B2 English example that demonstrates a genuinely different paraphrase of that pattern. Use a different concrete topic so the learner can see how to transfer the structure. Do not repeat correctedTranslation or upgradedTranslation.",
+          isWritingTemplate
+            ? `CRITICAL RULES FOR WRITING TEMPLATE PATTERN & EXAMPLE:
+1. patternTipVi: MUST strictly present the reusable English template pattern using square bracket placeholders (from input.referenceEn), followed by a brief Vietnamese explanation in parentheses: "${input.referenceEn} (<giải thích ngắn gọn chức năng của mẫu câu>)". Example: "${input.referenceEn} (Dùng để so sánh hoặc đưa ra quan điểm đối lập kèm lý do)".
+2. paraphraseExampleEn: MUST strictly follow and apply the EXACT sentence structure of that template (${input.referenceEn}). Fill the bracketed placeholders ([...]) with realistic, high-scoring B2 content on a completely DIFFERENT topic (e.g. technology, healthcare, environmental protection, or remote working). CRITICAL: Do NOT substitute or paraphrase the fixed keywords and connectors of the template! For example, if the template is 'On the other hand, those who favour [VIEW B] point out that [REASON B].', paraphraseExampleEn MUST start with 'On the other hand, those who favour...' and use 'point out that...', NEVER replacing them with 'Conversely' or 'proponents argue'. The student needs to see that exact template in action.`
+            : `patternTipVi must contain a reusable English sentence pattern with clear placeholders in square brackets, followed by one brief Vietnamese explanation in parentheses: "<Pattern with [PLACEHOLDERS]> (<Brief Vietnamese explanation>)". Example: "It is widely believed that [OPINION] because [REASON]. (Dùng để giới thiệu quan điểm phổ biến)".
+paraphraseExampleEn: MUST strictly follow and apply the EXACT sentence structure and keywords of patternTipVi, filling in the bracketed placeholders [...] with realistic content for a different topic so the learner sees how to transfer the structure. Do NOT change the template's fixed wording.`,
           "feedbackVi: Write a supportive 1-2 sentence overall summary in Vietnamese evaluating the sentence, highlighting what the learner did well and key areas for improvement in grammar or word choice.",
           "Detailed rules for grammarIssues:",
           "1. Every grammarIssues.sourceQuote must be copied exactly from the learner answer.",
@@ -258,8 +262,21 @@ export class OpenAiTranslationReviewGateway implements ITranslationReviewGateway
       (result.meaningScore + result.grammarScore + result.naturalnessScore) / 3,
     )
 
+    let patternTipVi = result.patternTipVi;
+    if (isWritingTemplate && input.referenceEn && input.referenceEn.includes("[")) {
+      if (!patternTipVi.includes("[")) {
+        const cleanExplanation = patternTipVi
+          .replace(/^Cấu trúc\s*[:\-\s]*/i, "")
+          .replace(/^"?[^"]+"?\s*/, "")
+          .replace(/[()]/g, "")
+          .trim() || "Cấu trúc template B2";
+        patternTipVi = `${input.referenceEn} (${cleanExplanation})`;
+      }
+    }
+
     return {
       ...result,
+      patternTipVi,
       score: normalizedScore,
       grammarIssues: result.grammarIssues.filter((issue) =>
         input.learnerAnswer.includes(issue.sourceQuote),
