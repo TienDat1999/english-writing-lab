@@ -6,6 +6,8 @@ import "@fontsource/be-vietnam-pro/700.css";
 import "@fontsource/be-vietnam-pro/800.css";
 import "./globals.css";
 
+import { PageTransitionLoader } from "@/components/page-transition-loader";
+
 export const metadata: Metadata = {
   title: "Draftwise - IELTS writing that remembers",
   description:
@@ -15,7 +17,10 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="vi" className="h-full antialiased">
-      <body className="flex min-h-full flex-col">{children}</body>
+      <body className="flex min-h-full flex-col">
+        <PageTransitionLoader />
+        {children}
+      </body>
     </html>
   );
 }
