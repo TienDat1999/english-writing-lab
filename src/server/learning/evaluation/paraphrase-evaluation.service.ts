@@ -115,9 +115,12 @@ export async function evaluateParaphraseApplicationAttempt(
     ? normalizedAnswer.includes(normalizedPhrase)
     : true;
 
-  const isCorrect = usesRequiredPhrase
-    && evaluation.meaningScore >= 70
-    && evaluation.grammarScore >= 70;
+  const isCorrect =
+    usesRequiredPhrase &&
+    evaluation.score >= 70 &&
+    evaluation.meaningScore >= 70 &&
+    evaluation.grammarScore >= 70 &&
+    (!evaluation.grammarIssues || evaluation.grammarIssues.length === 0);
 
   return { evaluation, isCorrect, usesRequiredPhrase };
 }

@@ -759,16 +759,18 @@ export function ReviewSession({
         <TranslationResult
           evaluation={evaluation}
           learnerAnswer={draft}
-          onNext={() =>
-            goToNextItem(evaluation.meaningScore < 70, {
-              isCorrect: evaluation.score >= 70,
+          onNext={() => {
+            const hasError =
+              evaluation.score < 70 ||
+              evaluation.meaningScore < 70 ||
+              evaluation.grammarScore < 70 ||
+              Boolean(evaluation.grammarIssues && evaluation.grammarIssues.length > 0);
+
+            goToNextItem(hasError, {
+              isCorrect: !hasError,
               userDraft: draft,
               feedback: evaluation.feedbackVi,
-            })
-          }
-          onRetry={() => {
-            setEvaluation(null);
-            setError(null);
+            });
           }}
           onPhraseSaved={addPhraseToSession}
           sourceText={item.promptText}
@@ -800,7 +802,7 @@ export function ReviewSession({
                 key={item.id}
                 item={item}
                 onNext={(isCorrect, userDraft) =>
-                  goToNextItem(false, { isCorrect, userDraft })
+                  goToNextItem(!isCorrect, { isCorrect, userDraft })
                 }
                 typeOnly={isUploadedQuiz}
               />
@@ -939,7 +941,11 @@ function WritingTemplatePractice({
   }
 
   if (evaluation) {
-    const shouldRepeat = evaluation.meaningScore < 70 || evaluation.grammarScore < 70;
+    const shouldRepeat =
+      evaluation.score < 70 ||
+      evaluation.meaningScore < 70 ||
+      evaluation.grammarScore < 70 ||
+      Boolean(evaluation.grammarIssues && evaluation.grammarIssues.length > 0);
 
     return (
       <TranslationResult
@@ -948,10 +954,6 @@ function WritingTemplatePractice({
         meaningLabel="Đúng chức năng"
         nextLabel="Tiếp tục"
         onNext={() => onNext(shouldRepeat, { isCorrect: !shouldRepeat, userDraft: draft })}
-        onRetry={() => {
-          setEvaluation(null);
-          setError(null);
-        }}
         sourceText={item.applicationPromptVi}
       />
     );
@@ -1286,7 +1288,6 @@ function TranslationResult({
   meaningLabel = "Đúng nghĩa",
   nextLabel = "Tiếp tục",
   onNext,
-  onRetry,
   onPhraseSaved,
   sourceText,
   sourceLearningItemId,
@@ -1296,7 +1297,6 @@ function TranslationResult({
   meaningLabel?: string;
   nextLabel?: string;
   onNext: () => void;
-  onRetry?: () => void;
   onPhraseSaved?: (item: LearningItemView) => void;
   sourceText?: string;
   sourceLearningItemId?: string;
@@ -1325,7 +1325,11 @@ function TranslationResult({
     ["Tự nhiên", evaluation.naturalnessScore],
   ] as const;
 
-  const isLowScore = evaluation.score < 70;
+  const hasError =
+    evaluation.score < 70 ||
+    evaluation.meaningScore < 70 ||
+    evaluation.grammarScore < 70 ||
+    Boolean(evaluation.grammarIssues && evaluation.grammarIssues.length > 0);
 
   return (
     <div className="grid gap-6 lg:grid-cols-12 lg:items-start animate-in fade-in-50 duration-300" aria-live="polite">
@@ -1417,22 +1421,10 @@ function TranslationResult({
         {/* Actions: Always visible on desktop without scrolling! */}
         <div className="pt-2 space-y-2 border-t border-slate-100">
           <div className="flex gap-2">
-            {onRetry && (
-              <Button
-                onClick={onRetry}
-                variant="outline"
-                size="lg"
-                className="rounded-xl font-bold h-11 text-xs gap-1.5 hover:bg-slate-50 shrink-0"
-              >
-                <HugeiconsIcon icon={RefreshIcon} size={15} />
-                <span>Sửa lại</span>
-              </Button>
-            )}
-
             <Button
               onClick={onNext}
               size="lg"
-              className="flex-1 rounded-xl font-bold h-11 text-sm gap-2 shadow-sm"
+              className="w-full rounded-xl font-bold h-11 text-sm gap-2 shadow-sm"
             >
               <span>{nextLabel}</span>
               <kbd className="hidden sm:inline-block rounded bg-primary-foreground/20 px-1.5 py-0.5 text-[10px] font-mono leading-none">
@@ -1443,10 +1435,10 @@ function TranslationResult({
           </div>
 
           <div className="text-center">
-            {isLowScore ? (
+            {hasError ? (
               <p className="text-xs text-amber-700 flex items-center justify-center gap-1.5 font-medium">
                 <HugeiconsIcon icon={RefreshIcon} size={13} />
-                <span>Câu này sẽ xuất hiện lại ở cuối phiên</span>
+                <span>Câu này sẽ xuất hiện lại sau khi hết vòng để bạn ôn lại</span>
               </p>
             ) : (
               <p className="text-xs text-emerald-700 flex items-center justify-center gap-1.5 font-medium">

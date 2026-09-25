@@ -4,16 +4,11 @@ import {
   CheckmarkCircle02Icon,
   Clock01Icon,
   HelpCircleIcon,
-  InformationCircleIcon,
-  RefreshIcon,
-  SparklesIcon,
-  VolumeHighIcon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { useMemo, useState } from "react";
 
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 
 export type PreviewExerciseData = {
   id: string;
@@ -198,7 +193,7 @@ export function LessonPreviewQuiz({ exercise }: { exercise: PreviewExerciseData 
                   key={cIdx}
                   type="button"
                   onClick={() => setSelectedChoice(choice)}
-                  disabled={isCorrect === true}
+                  disabled={isAnswered}
                   className={`group flex items-center gap-2.5 rounded-xl border p-2.5 sm:p-3 text-xs sm:text-sm font-medium transition-all text-left ${choiceStyle}`}
                 >
                   <span
@@ -220,7 +215,7 @@ export function LessonPreviewQuiz({ exercise }: { exercise: PreviewExerciseData 
       {/* Feedback Banner */}
       {isAnswered && (
         <div
-          className={`flex items-start justify-between gap-3 rounded-xl p-3 text-xs transition-all ${
+          className={`rounded-xl p-3 text-xs transition-all ${
             isCorrect
               ? "bg-emerald-50 border border-emerald-200 text-emerald-900"
               : "bg-rose-50 border border-rose-200 text-rose-900"
@@ -240,21 +235,29 @@ export function LessonPreviewQuiz({ exercise }: { exercise: PreviewExerciseData 
                   {meaningText ? `(${meaningText})` : ""}
                 </>
               ) : (
-                "Từ này không tạo thành collocation tự nhiên. Hãy bấm 'Thử lại' để chọn từ khác."
+                <>
+                  {exercise.explanationText ? (
+                    exercise.explanationText
+                  ) : (
+                    <>
+                      Đáp án chính xác là:{" "}
+                      <strong className="text-rose-950 font-bold">
+                        {exercise.correctAnswer}
+                      </strong>
+                      {exercise.targetContent ? (
+                        <>
+                          . Cụm từ hoàn chỉnh:{" "}
+                          <strong className="text-slate-900 font-bold">
+                            {exercise.targetContent}
+                          </strong>
+                        </>
+                      ) : null}
+                    </>
+                  )}
+                </>
               )}
             </p>
           </div>
-
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={() => setSelectedChoice(null)}
-            className="h-7 px-2 text-[11px] font-semibold hover:bg-white/80 shrink-0 gap-1"
-          >
-            <HugeiconsIcon icon={RefreshIcon} size={12} />
-            Thử lại
-          </Button>
         </div>
       )}
     </div>
