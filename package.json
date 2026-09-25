@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev --webpack",
     "dev:admin": "pnpm --dir admin dev",
     "worker": "tsx src/worker/analysis.worker.ts",
     "content:migrate-uploaded-quizzes": "tsx scripts/migrate-uploaded-quizzes.ts",
