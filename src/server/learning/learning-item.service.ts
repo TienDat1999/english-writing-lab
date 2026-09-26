@@ -627,6 +627,267 @@ export async function syncLearningItemsFromCompletedSubmissions(userId: string) 
   );
 }
 
+export async function listSubmissionLearningItems(
+  userId: string,
+  dueOnly = false,
+): Promise<LearningItemView[]> {
+  await connectMongoose();
+  const filter: Record<string, unknown> = {
+    userId: requireObjectId(userId),
+    deletedAt: null,
+    sourceType: { $ne: "UPLOADED_QUIZ" },
+    title: { $ne: "Imported Quick Quiz" },
+  };
+
+  if (dueOnly) {
+    filter.nextReviewAt = { $lte: new Date() };
+  }
+
+  const items = await LearningItem.find(filter)
+    .sort({ nextReviewAt: 1, createdAt: -1 })
+    .limit(50)
+    .lean();
+
+  return items
+    .sort((left, right) => Number(right.sourceType === "TRANSLATION") - Number(left.sourceType === "TRANSLATION"))
+    .map((item) => toView(item as unknown as ItemWithId));
+}
+
+export type ReviewCategoryKey =
+  | "ALL_DUE"
+  | "COLLOCATION"
+  | "TEMPLATE"
+  | "TOPIC_VOCABULARY"
+  | "PARAPHRASE"
+  | "SYNONYM"
+  | "SUBMISSION"
+  | "QUICK";
+
+export type ReviewCategoryCardData = {
+  key: ReviewCategoryKey;
+  label: string;
+  title: string;
+  subtitle: string;
+  description: string;
+  totalCount: number;
+  dueCount: number;
+  masteredCount: number;
+  topicsCount: number;
+  sampleTopics: Array<{ topic: string; count: number }>;
+  href: string;
+  badge: string;
+  colorScheme: "sky" | "indigo" | "emerald" | "violet" | "amber" | "rose" | "teal";
+};
+
+export type ReviewHubOverview = {
+  totalDue: number;
+  totalItems: number;
+  categories: ReviewCategoryCardData[];
+};
+
+export async function getReviewCategoriesOverview(userId: string): Promise<ReviewHubOverview> {
+  await connectMongoose();
+  const ownerId = requireObjectId(userId);
+  const now = new Date();
+
+  const rawStats = await LearningItem.aggregate<{
+    _id: {
+      categoryKey: string;
+      topicText: string;
+    };
+    count: number;
+    dueCount: number;
+    masteredCount: number;
+  }>([
+    {
+      $match: {
+        userId: ownerId,
+        deletedAt: null,
+      },
+    },
+    {
+      $project: {
+        isDue: { $lte: ["$nextReviewAt", now] },
+        isMastered: { $eq: ["$status", "MASTERED"] },
+        topicText: { $ifNull: ["$topicText", ""] },
+        categoryKey: {
+          $cond: [
+            { $eq: ["$sourceType", "UPLOADED_QUIZ"] },
+            "$quizType",
+            {
+              $cond: [
+                { $eq: ["$title", "Imported Quick Quiz"] },
+                "PARAPHRASE",
+                "SUBMISSION",
+              ],
+            },
+          ],
+        },
+      },
+    },
+    {
+      $group: {
+        _id: {
+          categoryKey: "$categoryKey",
+          topicText: "$topicText",
+        },
+        count: { $sum: 1 },
+        dueCount: { $sum: { $cond: ["$isDue", 1, 0] } },
+        masteredCount: { $sum: { $cond: ["$isMastered", 1, 0] } },
+      },
+    },
+  ]);
+
+  let totalDue = 0;
+  let totalItems = 0;
+
+  const categoryMap = new Map<
+    string,
+    {
+      totalCount: number;
+      dueCount: number;
+      masteredCount: number;
+      topics: Map<string, number>;
+    }
+  >();
+
+  for (const stat of rawStats) {
+    const categoryKey = stat._id.categoryKey || "SUBMISSION";
+    const topicText = stat._id.topicText || "";
+
+    totalDue += stat.dueCount;
+    totalItems += stat.count;
+
+    if (!categoryMap.has(categoryKey)) {
+      categoryMap.set(categoryKey, {
+        totalCount: 0,
+        dueCount: 0,
+        masteredCount: 0,
+        topics: new Map(),
+      });
+    }
+
+    const current = categoryMap.get(categoryKey)!;
+    current.totalCount += stat.count;
+    current.dueCount += stat.dueCount;
+    current.masteredCount += stat.masteredCount;
+
+    if (topicText) {
+      current.topics.set(topicText, (current.topics.get(topicText) || 0) + stat.count);
+    }
+  }
+
+  const getStats = (key: string) => {
+    const data = categoryMap.get(key) || {
+      totalCount: 0,
+      dueCount: 0,
+      masteredCount: 0,
+      topics: new Map(),
+    };
+    const sampleTopics: Array<{ topic: string; count: number }> = [];
+    for (const [topic, count] of data.topics.entries()) {
+      sampleTopics.push({ topic, count });
+    }
+    return {
+      totalCount: data.totalCount,
+      dueCount: data.dueCount,
+      masteredCount: data.masteredCount,
+      topicsCount: data.topics.size,
+      sampleTopics: sampleTopics.slice(0, 10),
+    };
+  };
+
+  const categories: ReviewCategoryCardData[] = [
+    {
+      key: "COLLOCATION",
+      label: "Collocation",
+      title: "Cụm từ Collocation",
+      subtitle: "3-Step Mastery",
+      description: "Luyện phản xạ ghép cụm từ tự nhiên theo ngữ cảnh (Nhận diện → Gợi nhớ → Đặt câu).",
+      ...getStats("COLLOCATION"),
+      href: "/dashboard/review?category=COLLOCATION",
+      badge: "3 Bước Phản Xạ",
+      colorScheme: "sky",
+    },
+    {
+      key: "TEMPLATE",
+      label: "Writing Template",
+      title: "Mẫu câu Writing B2/C1",
+      subtitle: "Cấu trúc chuẩn học thuật",
+      description: "Nhìn chức năng tiếng Việt và gõ lại câu template chuẩn học thuật với AI chấm điểm.",
+      ...getStats("TEMPLATE"),
+      href: "/dashboard/review?category=TEMPLATE",
+      badge: "AI Chấm Mẫu Câu",
+      colorScheme: "indigo",
+    },
+    {
+      key: "TOPIC_VOCABULARY",
+      label: "Từ vựng chuyên đề",
+      title: "Topic Vocabulary",
+      subtitle: "3-Step Mastery",
+      description: "Học và kiểm tra từ vựng chuyên sâu theo chủ đề bài thi và ngữ cảnh thực tế.",
+      ...getStats("TOPIC_VOCABULARY"),
+      href: "/dashboard/review?category=TOPIC_VOCABULARY",
+      badge: "3 Bước Phản Xạ",
+      colorScheme: "emerald",
+    },
+    {
+      key: "PARAPHRASE",
+      label: "Paraphrase",
+      title: "Luyện Paraphrase",
+      subtitle: "3-Step Mastery",
+      description: "Nâng cấp vốn từ và biến đổi diễn đạt tương đương: Nhận diện, gợi nhớ và đặt câu.",
+      ...getStats("PARAPHRASE"),
+      href: "/dashboard/review?category=PARAPHRASE",
+      badge: "3 Bước Phản Xạ",
+      colorScheme: "violet",
+    },
+    {
+      key: "SYNONYM",
+      label: "Cặp Synonym",
+      title: "Cặp từ đồng nghĩa",
+      subtitle: "Phản xạ nhanh",
+      description: "Ghi nhớ các cặp từ đồng nghĩa kinh điển giúp đa dạng hoá vốn từ bài viết.",
+      ...getStats("SYNONYM"),
+      href: "/dashboard/review?category=SYNONYM",
+      badge: "Phản Xạ Nhanh",
+      colorScheme: "amber",
+    },
+    {
+      key: "SUBMISSION",
+      label: "Từ bài viết của Bạn",
+      title: "Dịch câu & Ngữ pháp",
+      subtitle: "Trích xuất bài luận",
+      description: "Ôn lại các lỗi sai ngữ pháp và luyện dịch câu trích từ bài viết bạn đã nộp.",
+      ...getStats("SUBMISSION"),
+      href: "/dashboard/review?category=SUBMISSION",
+      badge: "Cá Nhân Hoá",
+      colorScheme: "rose",
+    },
+    {
+      key: "QUICK",
+      label: "Luyện 5 phút",
+      title: "Quick Quiz Cụm từ",
+      subtitle: "Ôn nhanh ngẫu nhiên",
+      description: "Luyện tập tự do các cụm từ bạn đã lưu lại sau mỗi bài chấm.",
+      totalCount: categoryMap.get("SUBMISSION")?.totalCount ?? 0,
+      dueCount: 0,
+      masteredCount: 0,
+      topicsCount: 0,
+      sampleTopics: [],
+      href: "/dashboard/review?mode=quick",
+      badge: "Luyện Nhanh",
+      colorScheme: "teal",
+    },
+  ];
+
+  return {
+    totalDue,
+    totalItems,
+    categories,
+  };
+}
+
 export async function deleteLearningItem(userId: string, learningItemId: string) {
   await connectMongoose();
   const result = await LearningItem.updateOne(
@@ -642,3 +903,4 @@ export async function deleteLearningItem(userId: string, learningItemId: string)
     throw new ResourceNotFoundError();
   }
 }
+

@@ -45,9 +45,9 @@ export function ReviewSessionHeader({
             size="sm"
             className="h-6 px-1.5 text-xs text-muted-foreground hover:text-foreground -ml-1 rounded-md gap-1"
           >
-            <Link href="/dashboard/learning">
+            <Link href="/dashboard/review?view=categories">
               <HugeiconsIcon icon={ArrowLeft01Icon} size={13} />
-              <span>Thư viện</span>
+              <span>Đổi phần ôn</span>
             </Link>
           </Button>
           <span className="text-slate-300">/</span>
