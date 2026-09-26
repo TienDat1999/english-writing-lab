@@ -98,49 +98,49 @@ export function ReviewCategoryHub({
   const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* 1. Hero Header */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-slate-900 via-sky-950 to-slate-900 p-5 sm:p-6 text-white shadow-md border border-slate-800/80">
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-slate-900 via-sky-950 to-slate-900 p-4 sm:p-5 text-white shadow-md border border-slate-800/80">
         <div className="absolute -right-16 -top-16 size-48 rounded-full bg-sky-500/10 blur-3xl pointer-events-none" />
-        <div className="relative z-10 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-          <div className="space-y-1.5 max-w-2xl">
+        <div className="relative z-10 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <div className="space-y-1 max-w-2xl">
             <div className="flex items-center gap-2">
-              <span className="inline-flex items-center gap-1 rounded-md bg-sky-400/20 px-2 py-0.5 font-mono text-[11px] font-bold text-sky-200 border border-sky-400/30">
-                <HugeiconsIcon icon={FilterIcon} size={13} />
+              <span className="inline-flex items-center gap-1 rounded-md bg-sky-400/20 px-2 py-0.5 font-mono text-[10px] font-bold text-sky-200 border border-sky-400/30">
+                <HugeiconsIcon icon={FilterIcon} size={12} />
                 Trung tâm Ôn tập & Luyện phản xạ
               </span>
-              <span className="text-[11px] font-medium text-sky-200/80">
+              <span className="text-[10px] font-medium text-sky-200/80">
                 {overview.totalItems} nội dung trong kho
               </span>
             </div>
-            <h1 className="font-heading text-xl font-bold tracking-tight text-white sm:text-2xl">
+            <h1 className="font-heading text-lg font-bold tracking-tight text-white sm:text-xl">
               Chọn phần bạn muốn ôn tập hôm nay
             </h1>
-            <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
+            <p className="text-xs text-slate-300 leading-relaxed">
               Lựa chọn chuyên đề bạn muốn rèn luyện (Collocation, Writing Template, Từ vựng chuyên đề, Paraphrase, Synonym hoặc câu trích từ bài viết).
             </p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2.5 shrink-0">
+          <div className="flex flex-wrap items-center gap-2 shrink-0">
             {overview.totalDue > 0 ? (
-              <Button asChild size="sm" className="h-9 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold shadow-md shadow-amber-500/20 text-xs px-4">
+              <Button asChild size="sm" className="h-8 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold shadow-md shadow-amber-500/20 text-xs px-3.5">
                 <Link href="/dashboard/review?category=ALL_DUE" className="inline-flex items-center gap-1.5">
-                  <HugeiconsIcon icon={Clock01Icon} size={15} />
+                  <HugeiconsIcon icon={Clock01Icon} size={14} />
                   <span>Ôn {overview.totalDue} mục đến hạn hôm nay</span>
-                  <HugeiconsIcon icon={ArrowRight01Icon} size={14} />
+                  <HugeiconsIcon icon={ArrowRight01Icon} size={13} />
                 </Link>
               </Button>
             ) : (
-              <Button asChild size="sm" className="h-9 bg-sky-500 hover:bg-sky-400 text-white font-bold shadow-md shadow-sky-500/20 text-xs px-4">
+              <Button asChild size="sm" className="h-8 bg-sky-500 hover:bg-sky-400 text-white font-bold shadow-md shadow-sky-500/20 text-xs px-3.5">
                 <Link href="/dashboard/review?category=COLLOCATION" className="inline-flex items-center gap-1.5">
                   <span>Bắt đầu ôn Collocation</span>
-                  <HugeiconsIcon icon={ArrowRight01Icon} size={14} />
+                  <HugeiconsIcon icon={ArrowRight01Icon} size={13} />
                 </Link>
               </Button>
             )}
-            <Button asChild variant="outline" size="sm" className="h-9 bg-white/10 hover:bg-white/15 text-white border-white/20 font-semibold text-xs px-3 backdrop-blur-xs">
+            <Button asChild variant="outline" size="sm" className="h-8 bg-white/10 hover:bg-white/15 text-white border-white/20 font-semibold text-xs px-3 backdrop-blur-xs">
               <Link href="/dashboard/learning" className="inline-flex items-center gap-1.5">
-                <HugeiconsIcon icon={BookOpen01Icon} size={14} />
+                <HugeiconsIcon icon={BookOpen01Icon} size={13} />
                 <span>Thư viện học</span>
               </Link>
             </Button>
@@ -150,10 +150,10 @@ export function ReviewCategoryHub({
 
       {/* 2. Quick Alert if items are due */}
       {overview.totalDue > 0 && (
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-xl border border-amber-200 bg-amber-50/90 px-4 py-3 text-amber-950 text-xs sm:text-sm shadow-2xs">
-          <div className="flex items-center gap-2.5">
-            <div className="grid size-6 place-items-center rounded-md bg-amber-200 text-amber-800 shrink-0">
-              <HugeiconsIcon icon={Clock01Icon} size={14} />
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 rounded-xl border border-amber-200 bg-amber-50/90 px-3.5 py-2.5 text-amber-950 text-xs shadow-2xs">
+          <div className="flex items-center gap-2">
+            <div className="grid size-5.5 place-items-center rounded-md bg-amber-200 text-amber-800 shrink-0">
+              <HugeiconsIcon icon={Clock01Icon} size={13} />
             </div>
             <div>
               <span className="font-bold text-amber-900">
@@ -166,16 +166,16 @@ export function ReviewCategoryHub({
           </div>
           <Link
             href="/dashboard/review?category=ALL_DUE"
-            className="inline-flex items-center gap-1 rounded-lg bg-amber-600 px-3 py-1 text-xs font-bold text-white hover:bg-amber-700 transition-colors shrink-0 shadow-2xs self-start sm:self-auto"
+            className="inline-flex items-center gap-1 rounded-lg bg-amber-600 px-2.5 py-1 text-[11px] font-bold text-white hover:bg-amber-700 transition-colors shrink-0 shadow-2xs self-start sm:self-auto"
           >
             <span>Ôn toàn bộ mục đến hạn</span>
-            <HugeiconsIcon icon={ArrowRight01Icon} size={13} />
+            <HugeiconsIcon icon={ArrowRight01Icon} size={12} />
           </Link>
         </div>
       )}
 
       {/* 3. Grid of Category Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
         {overview.categories.map((cat) => {
           const theme = categoryTheme[cat.colorScheme] || categoryTheme.sky;
           const IconComponent = categoryIcons[cat.key as keyof typeof categoryIcons] || SparklesIcon;
@@ -183,52 +183,56 @@ export function ReviewCategoryHub({
           const hasTopics = cat.sampleTopics && cat.sampleTopics.length > 0;
 
           return (
-            <Card
+            <div
               key={cat.key}
-              className={`flex flex-col justify-between border transition-all duration-200 shadow-2xs hover:shadow-md ${theme.border} ${theme.bg}`}
+              className={`flex flex-col justify-between rounded-xl border p-3.5 transition-all duration-200 shadow-2xs hover:shadow-sm ${theme.border} ${theme.bg}`}
             >
-              <CardHeader className="p-4 pb-3 space-y-2.5">
+              <div className="space-y-2">
+                {/* Top icon and badges */}
                 <div className="flex items-center justify-between gap-2">
-                  <div className={`grid size-8 place-items-center rounded-lg ${theme.iconBg} shadow-2xs`}>
-                    <HugeiconsIcon icon={IconComponent} size={17} />
+                  <div className={`grid size-7 place-items-center rounded-lg ${theme.iconBg} shadow-2xs`}>
+                    <HugeiconsIcon icon={IconComponent} size={15} />
                   </div>
                   <div className="flex items-center gap-1.5">
                     {cat.dueCount > 0 && (
-                      <span className="rounded-md bg-amber-100 border border-amber-300 px-1.5 py-0.5 font-mono text-[10px] font-bold text-amber-900">
+                      <span className="rounded-md bg-amber-100 border border-amber-300 px-1.5 py-0.2 font-mono text-[9px] font-bold text-amber-900">
                         {cat.dueCount} đến hạn
                       </span>
                     )}
-                    <Badge variant="outline" className={`text-[10px] font-bold ${theme.badge}`}>
+                    <Badge variant="outline" className={`text-[9px] font-bold px-1.5 py-0.2 ${theme.badge}`}>
                       {cat.badge}
                     </Badge>
                   </div>
                 </div>
 
+                {/* Title & Subtitle */}
                 <div>
-                  <h3 className="font-heading text-base font-bold text-slate-900 flex items-center gap-1.5">
-                    <span>{cat.title}</span>
+                  <h3 className="font-heading text-sm font-bold text-slate-900 leading-snug">
+                    {cat.title}
                   </h3>
-                  <p className="text-[11px] font-semibold text-slate-500">
+                  <p className="text-[10px] font-semibold text-slate-500">
                     {cat.subtitle}
                   </p>
                 </div>
 
-                <p className="text-xs text-slate-600 leading-relaxed line-clamp-2">
+                {/* Description */}
+                <p className="text-[11px] text-slate-600 leading-snug line-clamp-2 min-h-[2rem]">
                   {cat.description}
                 </p>
-              </CardHeader>
+              </div>
 
-              <CardContent className="p-4 pt-0 space-y-3">
+              {/* Bottom section: Stats & Action */}
+              <div className="mt-3 space-y-2.5 pt-2 border-t border-slate-100/90">
                 {/* Stats row */}
-                <div className="flex items-center justify-between border-t border-slate-100/90 pt-2.5 text-xs">
+                <div className="flex items-center justify-between text-xs">
                   <div className="flex items-baseline gap-1">
-                    <span className={`font-mono text-base font-bold ${theme.accent}`}>
+                    <span className={`font-mono text-sm font-bold ${theme.accent}`}>
                       {cat.totalCount}
                     </span>
-                    <span className="text-[11px] text-slate-500 font-medium">nội dung</span>
+                    <span className="text-[10px] text-slate-500 font-medium">nội dung</span>
                   </div>
                   {cat.topicsCount > 0 && (
-                    <span className="text-[11px] font-mono text-slate-500">
+                    <span className="text-[10px] font-mono text-slate-500">
                       {cat.topicsCount} chủ đề
                     </span>
                   )}
@@ -236,19 +240,19 @@ export function ReviewCategoryHub({
 
                 {/* Subtopic list / accordion if available */}
                 {hasTopics && isExpanded && (
-                  <div className="space-y-1.5 rounded-lg border border-slate-200/80 bg-white/90 p-2.5 shadow-2xs animate-in fade-in-50 duration-200">
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                  <div className="space-y-1 rounded-lg border border-slate-200/80 bg-white/90 p-2 shadow-2xs animate-in fade-in-50 duration-200">
+                    <p className="text-[9px] font-bold uppercase tracking-wider text-slate-400">
                       Chọn chủ đề cụ thể:
                     </p>
-                    <div className="max-h-36 overflow-y-auto space-y-1 pr-1">
+                    <div className="max-h-32 overflow-y-auto space-y-0.5 pr-1">
                       {cat.sampleTopics.map((top) => (
                         <Link
                           key={top.topic}
                           href={`/dashboard/review?category=${cat.key}&quizType=${cat.key}&mode=upload&topic=${encodeURIComponent(top.topic)}`}
-                          className="flex items-center justify-between rounded px-2 py-1 text-[11px] font-medium text-slate-700 hover:bg-slate-100 hover:text-primary transition-colors"
+                          className="flex items-center justify-between rounded px-1.5 py-0.5 text-[10px] font-medium text-slate-700 hover:bg-slate-100 hover:text-primary transition-colors"
                         >
                           <span className="truncate pr-2">{top.topic}</span>
-                          <span className="font-mono text-[10px] text-slate-400 shrink-0">
+                          <span className="font-mono text-[9px] text-slate-400 shrink-0">
                             {top.count} câu →
                           </span>
                         </Link>
@@ -258,15 +262,15 @@ export function ReviewCategoryHub({
                 )}
 
                 {/* Actions */}
-                <div className="flex items-center gap-2 pt-1">
+                <div className="flex items-center gap-1.5">
                   <Button
                     asChild
                     size="sm"
-                    className={`h-8 flex-1 rounded-lg text-xs font-bold shadow-xs ${theme.button}`}
+                    className={`h-7.5 flex-1 rounded-lg text-xs font-bold shadow-2xs ${theme.button}`}
                   >
-                    <Link href={cat.href} className="inline-flex items-center justify-center gap-1.5">
+                    <Link href={cat.href} className="inline-flex items-center justify-center gap-1">
                       <span>Ôn toàn bộ ({cat.totalCount})</span>
-                      <HugeiconsIcon icon={ArrowRight01Icon} size={13} />
+                      <HugeiconsIcon icon={ArrowRight01Icon} size={12} />
                     </Link>
                   </Button>
 
@@ -276,15 +280,15 @@ export function ReviewCategoryHub({
                       variant="outline"
                       size="sm"
                       onClick={() => setExpandedCategory(isExpanded ? null : cat.key)}
-                      className="h-8 px-2.5 rounded-lg text-xs font-semibold bg-white border-slate-200 text-slate-700 hover:bg-slate-50"
+                      className="h-7.5 px-2 rounded-lg text-[11px] font-semibold bg-white border-slate-200 text-slate-700 hover:bg-slate-50"
                       title="Xem danh sách chủ đề"
                     >
                       {isExpanded ? "Thu gọn" : "Chủ đề"}
                     </Button>
                   )}
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           );
         })}
       </div>
