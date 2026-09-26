@@ -11,9 +11,9 @@ import { useState } from "react";
 
 import { TranslationResult } from "@/components/shared/evaluation/translation-result";
 import type { TranslationEvaluation } from "@/components/shared/evaluation/types";
+import { PracticeInputBox } from "@/components/shared/practice-input-box";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import type { LearningItemView } from "@/server/learning/learning.service";
 
 export type WritingTemplatePracticeProps = {
@@ -32,9 +32,6 @@ export function WritingTemplatePractice({
   const [isChecking, setIsChecking] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showHint, setShowHint] = useState(false);
-
-  const wordCount = draft.trim() ? draft.trim().split(/\s+/).length : 0;
-  const charCount = draft.length;
 
   async function evaluate() {
     if (draft.trim().length < 2 || isChecking) return;
@@ -142,43 +139,20 @@ export function WritingTemplatePractice({
         {/* Right Column: Textarea & Submit Action (7 cols on lg) */}
         <div className="lg:col-span-7 space-y-3">
           <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <label className="text-xs font-semibold text-slate-700">
-                Bản viết tiếng Anh B2 của bạn
-              </label>
-              {draft.length > 0 && (
-                <button
-                  type="button"
-                  onClick={() => setDraft("")}
-                  className="text-xs text-muted-foreground hover:text-rose-600 transition-colors"
-                >
-                  Xóa làm lại
-                </button>
-              )}
-            </div>
+            <label className="text-xs font-semibold text-slate-700">
+              Bản viết tiếng Anh B2 của bạn
+            </label>
 
-            <div className="relative rounded-xl border border-slate-200 bg-white transition-all focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/15 shadow-2xs overflow-hidden">
-              <Textarea
-                className="min-h-48 sm:min-h-56 border-0 bg-transparent p-4 text-base sm:text-lg leading-relaxed shadow-none focus-visible:ring-0 focus-visible:outline-none resize-y placeholder:text-muted-foreground/60"
-                onChange={(event) => setDraft(event.target.value)}
-                onKeyDown={(e) => {
-                  if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
-                    e.preventDefault();
-                    void evaluate();
-                  }
-                }}
-                placeholder="Viết câu tiếng Việt trên bằng tiếng Anh B2..."
-                value={draft}
-              />
-              <div className="flex items-center justify-between border-t border-slate-100 bg-slate-50/60 px-4 py-2 text-xs text-muted-foreground">
-                <span className="font-mono">
-                  {wordCount} từ · {charCount} ký tự
-                </span>
-                <span className="hidden sm:inline text-[11px] text-muted-foreground/80">
-                  Nhấn <kbd className="rounded bg-white px-1.5 py-0.5 border border-slate-200 text-[10px] font-mono">⌘ + Enter</kbd> để chấm
-                </span>
-              </div>
-            </div>
+            <PracticeInputBox
+              value={draft}
+              onChange={setDraft}
+              onSubmit={() => void evaluate()}
+              placeholder="Viết câu tiếng Việt trên bằng tiếng Anh B2..."
+              disabled={isChecking}
+              autoFocus={true}
+              minHeightClassName="min-h-48 sm:min-h-56"
+              submitShortcut="mod-enter"
+            />
           </div>
 
           <Button

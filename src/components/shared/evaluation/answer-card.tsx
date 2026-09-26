@@ -137,6 +137,7 @@ export type AnswerCardProps = {
   showActions?: boolean;
   actionText?: string;
   issues?: GrammarIssue[];
+  badgeText?: string;
 };
 
 export function AnswerCard({
@@ -148,6 +149,7 @@ export function AnswerCard({
   showActions = true,
   actionText,
   issues,
+  badgeText,
 }: AnswerCardProps) {
   const styles = answerCardStyles[variant];
   const [selectedPhrase, setSelectedPhrase] = useState("");
@@ -196,47 +198,50 @@ export function AnswerCard({
 
   return (
     <div
-      className={`rounded-xl border p-3.5 sm:p-4 transition-all ${styles.card}`}
+      className={`rounded-xl border p-3.5 sm:p-4 transition-all flex flex-col justify-between ${styles.card}`}
       onMouseUp={captureSelection}
     >
-      <div className="flex items-center justify-between gap-2 mb-1.5 flex-wrap">
-        <div className="flex items-center gap-2">
-          <span className={`text-[11px] font-bold tracking-wider uppercase ${styles.label}`}>
-            {label}
-          </span>
-          <span className={`rounded-full border px-2 py-0.5 text-[10px] font-bold ${styles.badge}`}>
-            {variant === "learner"
-              ? hasIssues
-                ? "Bản của bạn (Sửa trực tiếp)"
-                : "Bản của bạn ✓ Chuẩn ngữ pháp"
-              : styles.status}
-          </span>
+      <div className="space-y-2">
+        <div className="flex items-center justify-between gap-2 mb-1.5 flex-wrap">
+          <div className="flex items-center gap-2">
+            <span className={`text-[11px] font-bold tracking-wider uppercase ${styles.label}`}>
+              {label}
+            </span>
+            <span className={`rounded-full border px-2 py-0.5 text-[10px] font-bold ${styles.badge}`}>
+              {badgeText ||
+                (variant === "learner"
+                  ? hasIssues
+                    ? "Bản của bạn (Sửa trực tiếp)"
+                    : "Bản của bạn ✓ Chuẩn ngữ pháp"
+                  : styles.status)}
+            </span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            {variant === "learner" && hasIssues && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowRaw(!showRaw)}
+                className="h-6 text-[10px] px-2 text-muted-foreground hover:text-foreground font-semibold"
+              >
+                {showRaw ? "Xem sửa trực tiếp" : "Xem câu gốc"}
+              </Button>
+            )}
+            {showActions && (
+              <div className="flex items-center gap-1">
+                <PronounceButton text={speechText} />
+                <CopyButton text={speechText} />
+              </div>
+            )}
+          </div>
         </div>
-        <div className="flex items-center gap-1.5">
-          {variant === "learner" && hasIssues && (
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={() => setShowRaw(!showRaw)}
-              className="h-6 text-[10px] px-2 text-muted-foreground hover:text-foreground font-semibold"
-            >
-              {showRaw ? "Xem sửa trực tiếp" : "Xem câu gốc"}
-            </Button>
-          )}
-          {showActions && (
-            <div className="flex items-center gap-1">
-              <PronounceButton text={speechText} />
-              <CopyButton text={speechText} />
-            </div>
-          )}
-        </div>
-      </div>
 
-      <div className="cursor-text select-text whitespace-pre-wrap text-sm sm:text-base font-medium leading-relaxed text-slate-900">
-        {variant === "learner" && hasIssues && !showRaw
-          ? renderAnnotatedAnswer(text, issues)
-          : text}
+        <div className="cursor-text select-text whitespace-pre-wrap text-sm sm:text-base font-medium leading-relaxed text-slate-900">
+          {variant === "learner" && hasIssues && !showRaw
+            ? renderAnnotatedAnswer(text, issues)
+            : text}
+        </div>
       </div>
 
       {selectedPhrase && onPhraseSaved ? (

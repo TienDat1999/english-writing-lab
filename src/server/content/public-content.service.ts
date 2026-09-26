@@ -103,6 +103,7 @@ type PreviewExercise = {
     correctAnswer?: string | null;
   };
   estimatedSeconds: number | null;
+  isPreview?: boolean;
 };
 
 type CollectionRecord = {
@@ -387,10 +388,10 @@ async function findPublishedLessonBySlug(slug: string) {
 export async function getPublicLessonDetail(slug: string, query: PublicDetailQuery) {
   await connectMongoose();
   const { lesson, version } = await findPublishedLessonBySlug(slug);
-  const [topic, previewExercises, parentCollection] = await Promise.all([
+  const [topic, allExercises, parentCollection] = await Promise.all([
     ContentTopic.findOne({ _id: version.primaryTopicId, status: "ACTIVE" })
       .lean<PublicTopic>(),
-    Exercise.find({ lessonVersionId: version._id, isPreview: true })
+    Exercise.find({ lessonVersionId: version._id })
       .sort({ position: 1 })
       .select({
         position: 1,
@@ -401,6 +402,7 @@ export async function getPublicLessonDetail(slug: string, query: PublicDetailQue
         choices: 1,
         answerRubric: 1,
         estimatedSeconds: 1,
+        isPreview: 1,
       })
       .lean<PreviewExercise[]>(),
     ContentCollection.findOne({
@@ -432,6 +434,26 @@ export async function getPublicLessonDetail(slug: string, query: PublicDetailQue
     }
   }
 
+  const vocabularyItems = allExercises
+    .map((exercise) => {
+      const exerciseLocalization = selectLocalization(exercise.localizations, query.locale);
+      const rawPrompt = (exerciseLocalization?.promptText || "").trim();
+      const cleanedPrompt = rawPrompt.replace(/^(Ý nghĩa|Nghĩa):\s*/i, "").trim();
+      const targetContent = (exercise.targetContent || "").trim();
+      const contextText = (exercise.contextText || "").trim();
+      const answerText = targetContent || exercise.answerRubric?.correctAnswer || "";
+
+      return {
+        id: exercise._id.toString(),
+        position: exercise.position,
+        term: answerText,
+        meaning: cleanedPrompt,
+        contextText,
+        instruction: (exerciseLocalization?.instruction || "").trim(),
+      };
+    })
+    .filter((item) => item.term || item.meaning);
+
   return {
     lessonId: lesson._id.toString(),
     lessonVersionId: version._id.toString(),
@@ -452,30 +474,34 @@ export async function getPublicLessonDetail(slug: string, query: PublicDetailQue
     visibility: version.visibility,
     accessTier: version.accessTier,
     coverAssetId: version.coverAssetId?.toString() ?? null,
+    exerciseCount: allExercises.length,
+    vocabularyItems,
     primaryTopic: {
       id: topic._id.toString(),
       name: topicLocalization.name,
       slug: topicLocalization.slug,
     },
     collection: collectionInfo,
-    previewExercises: previewExercises.map((exercise) => {
-      const exerciseLocalization = selectLocalization(exercise.localizations, query.locale);
-      if (!exerciseLocalization) throw new ResourceNotFoundError();
-      return {
-        id: exercise._id.toString(),
-        position: exercise.position,
-        exerciseType: exercise.exerciseType,
-        instruction: exerciseLocalization.instruction,
-        promptText: exerciseLocalization.promptText,
-        hintText: exerciseLocalization.hintText,
-        explanationText: exerciseLocalization.explanationText ?? "",
-        targetContent: exercise.targetContent || "",
-        contextText: exercise.contextText || "",
-        choices: exercise.choices,
-        correctAnswer: exercise.answerRubric?.correctAnswer ?? null,
-        estimatedSeconds: exercise.estimatedSeconds,
-      };
-    }),
+    previewExercises: allExercises
+      .filter((exercise) => exercise.isPreview)
+      .map((exercise) => {
+        const exerciseLocalization = selectLocalization(exercise.localizations, query.locale);
+        if (!exerciseLocalization) throw new ResourceNotFoundError();
+        return {
+          id: exercise._id.toString(),
+          position: exercise.position,
+          exerciseType: exercise.exerciseType,
+          instruction: exerciseLocalization.instruction,
+          promptText: exerciseLocalization.promptText,
+          hintText: exerciseLocalization.hintText,
+          explanationText: exerciseLocalization.explanationText ?? "",
+          targetContent: exercise.targetContent || "",
+          contextText: exercise.contextText || "",
+          choices: exercise.choices,
+          correctAnswer: exercise.answerRubric?.correctAnswer ?? null,
+          estimatedSeconds: exercise.estimatedSeconds,
+        };
+      }),
     startAccess: {
       requiresAuthentication: true,
       requiresPremium: version.accessTier === "PREMIUM",

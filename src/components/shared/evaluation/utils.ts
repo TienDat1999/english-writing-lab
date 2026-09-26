@@ -3,26 +3,36 @@ import type { ScoreTier } from "./types";
 export function parsePatternTip(raw: string) {
   if (!raw) return { pattern: "", explanation: "", tokens: [] as string[] };
   let cleaned = raw.trim();
-  // Strip leading "Cấu trúc:" or "Cấu trúc "
-  cleaned = cleaned.replace(/^Cấu trúc\s*[:\-\s]*/i, "");
+  // Strip leading markdown prefixes and "Cấu trúc:" / "Cấu trúc "
+  cleaned = cleaned.replace(/^[\s*\-#>*]*Cấu trúc\s*[:\-\s]*/i, "");
+  cleaned = cleaned.replace(/^[\s*\-#>:]+/, "");
 
   let pattern = cleaned;
   let explanation = "";
 
-  // Check format: "pattern" followed by explanation or (explanation)
-  const quoteMatch = cleaned.match(/^"([^"]+)"\s*(.*)$/);
+  // Check format: "pattern" or “pattern” followed by explanation
+  const quoteMatch = cleaned.match(/^["“]([^"”]+)["”]\s*([\s\S]*)$/);
   if (quoteMatch) {
     pattern = quoteMatch[1].trim();
-    explanation = quoteMatch[2].replace(/^\((.*)\)$/, "$1").trim();
+    explanation = quoteMatch[2].replace(/^\(([\s\S]*)\)$/, "$1").trim();
   } else {
     // Check format: pattern (explanation)
-    const parenMatch = cleaned.match(/^(.*?)(?:\s*\(([^()]+)\))\s*$/);
+    const parenMatch = cleaned.match(/^([\s\S]*?)(?:\s*\(([^()]+)\))\s*$/);
     if (parenMatch) {
       pattern = parenMatch[1].trim();
       explanation = parenMatch[2].trim();
+    } else {
+      // Look for boundary where Vietnamese explanation starts (e.g. after sentence ending followed by Vietnamese characters)
+      const splitMatch = cleaned.match(/^([\s\S]*?[.!?])\s+([A-ZÀ-Ỹa-zà-ỹ][\s\S]*)$/);
+      if (splitMatch && /[à-ỹ]/i.test(splitMatch[2])) {
+        pattern = splitMatch[1].trim();
+        explanation = splitMatch[2].trim();
+      }
     }
   }
 
+  // Clean trailing/leading quotes from pattern
+  pattern = pattern.replace(/^["“]+|["”]+$/g, "").trim();
   // Clean any leading punctuation from explanation
   explanation = explanation.replace(/^[.\-:\s]+/, "").trim();
 

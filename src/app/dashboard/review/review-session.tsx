@@ -7,18 +7,16 @@ import { useEffect, useState } from "react";
 
 import { TranslationResult } from "@/components/shared/evaluation";
 import type { TranslationEvaluation } from "@/components/shared/evaluation";
-import { PhrasePractice, WritingTemplatePractice } from "@/components/shared/practice";
+import { PhrasePractice, PracticeInputBox, WritingTemplatePractice } from "@/components/shared/practice";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Textarea } from "@/components/ui/textarea";
 import type { UploadedQuizType } from "@/server/learning/learning.contract";
 import type { LearningItemView } from "@/server/learning/learning.service";
 
 import {
   ReviewSessionHeader,
   SessionPausedCard,
-  SessionSizeSelector,
   SessionSummary,
   clearProgressStorage,
   loadProgressFromStorage,
@@ -52,8 +50,6 @@ export function ReviewSession({
 }) {
   const storageKey = `draftwise_session_${sessionMode}_${uploadedQuizType ?? "all"}`;
 
-  // Session size choice
-  const [selectedSize, setSelectedSize] = useState<number | null>(null);
   const [items, setItems] = useState<LearningItemView[]>(initialItems);
   const [totalItems, setTotalItems] = useState(initialItems.length);
   const [revealed, setRevealed] = useState(false);
@@ -101,14 +97,6 @@ export function ReviewSession({
   function discardSavedSession() {
     clearProgressStorage(storageKey);
     setSavedSessionNotice(null);
-  }
-
-  function handleSelectSessionSize(size: number) {
-    setSelectedSize(size);
-    const sliced = initialItems.slice(0, size);
-    setItems(sliced);
-    setTotalItems(sliced.length);
-    setResults([]);
   }
 
   // Save progress to LocalStorage
@@ -263,7 +251,7 @@ export function ReviewSession({
   }
 
   // Notice: Resume previous in-progress session
-  if (savedSessionNotice && items.length === initialItems.length && !selectedSize) {
+  if (savedSessionNotice && items.length === initialItems.length) {
     return (
       <Card className="border-sky-200 bg-sky-50/70 p-6 sm:p-8">
         <CardContent className="space-y-4 p-0">
@@ -287,17 +275,6 @@ export function ReviewSession({
           </div>
         </CardContent>
       </Card>
-    );
-  }
-
-  // Session size selector (if not selected yet and there are more than 5 items)
-  if (selectedSize === null && initialItems.length > 5) {
-    return (
-      <SessionSizeSelector
-        initialItemsCount={initialItems.length}
-        topicHeader={topicHeader}
-        onSelectSize={handleSelectSessionSize}
-      />
     );
   }
 
@@ -424,35 +401,21 @@ export function ReviewSession({
             ) : (
               <>
                 {isTranslation ? (
-                  <div className="flex items-center justify-between gap-3">
-                    <p className="text-xs font-semibold text-slate-700">Bản dịch tiếng Anh của Bạn</p>
-                    {draft.length > 0 && (
-                      <Button
-                        disabled={isSaving}
-                        onClick={() => {
-                          setDraft("");
-                          setError(null);
-                        }}
-                        size="sm"
-                        type="button"
-                        variant="outline"
-                        className="text-xs h-8"
-                      >
-                        Viết lại
-                      </Button>
-                    )}
-                  </div>
+                  <p className="text-xs font-semibold text-slate-700">Bản dịch tiếng Anh của Bạn</p>
                 ) : null}
 
-                <Textarea
-                  className="min-h-36 resize-y bg-slate-50/60 text-base leading-7 focus-visible:bg-white rounded-xl"
-                  onChange={(event) => setDraft(event.target.value)}
+                <PracticeInputBox
+                  value={draft}
+                  onChange={setDraft}
+                  onSubmit={isTranslation ? evaluateTranslation : undefined}
                   placeholder={
                     isTranslation
                       ? "Nhập câu dịch tiếng Anh của Bạn tại đây..."
                       : "Tự viết câu trả lời trước khi xem đáp án..."
                   }
-                  value={draft}
+                  disabled={isSaving}
+                  minHeightClassName="min-h-36 sm:min-h-44"
+                  submitShortcut={isTranslation ? "mod-enter" : "none"}
                 />
 
                 {isTranslation ? (

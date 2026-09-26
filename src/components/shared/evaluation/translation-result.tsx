@@ -182,38 +182,40 @@ export function TranslationResult({
           <DetailedGrammarIssues issues={evaluation.grammarIssues} />
         )}
 
-        {/* B2 Natural Upgrade & Template Pattern Subgrid */}
+        {/* Template Pattern & B2 Natural Upgrade Subgrid */}
         {hasUpgrade && hasPattern ? (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 items-stretch">
+            <TemplatePatternSection
+              patternTipVi={evaluation.patternTipVi!}
+              paraphraseExampleEn={evaluation.paraphraseExampleEn}
+            />
+
             <AnswerCard
-              label="Gợi ý viết B2 tự nhiên hơn"
+              label="Gợi ý B2 cho đề bài này"
+              badgeText="B2 Chuẩn"
               onPhraseSaved={onPhraseSaved}
               sourceLearningItemId={sourceLearningItemId}
               text={evaluation.upgradedTranslation!}
               variant="upgrade"
             />
-
-            <TemplatePatternSection
-              patternTipVi={evaluation.patternTipVi!}
-              paraphraseExampleEn={evaluation.paraphraseExampleEn}
-            />
           </div>
         ) : (
           <>
-            {hasUpgrade && (
-              <AnswerCard
-                label="Gợi ý cách viết B2 tự nhiên hơn"
-                onPhraseSaved={onPhraseSaved}
-                sourceLearningItemId={sourceLearningItemId}
-                text={evaluation.upgradedTranslation!}
-                variant="upgrade"
-              />
-            )}
-
             {hasPattern && (
               <TemplatePatternSection
                 patternTipVi={evaluation.patternTipVi!}
                 paraphraseExampleEn={evaluation.paraphraseExampleEn}
+              />
+            )}
+
+            {hasUpgrade && (
+              <AnswerCard
+                label="Gợi ý B2 cho đề bài này"
+                badgeText="B2 Chuẩn"
+                onPhraseSaved={onPhraseSaved}
+                sourceLearningItemId={sourceLearningItemId}
+                text={evaluation.upgradedTranslation!}
+                variant="upgrade"
               />
             )}
           </>
@@ -228,18 +230,12 @@ export function TranslationResult({
             return !(evaluation.grammarIssues || []).some((issue) => {
               const normSrc = issue.sourceQuote.trim().toLowerCase();
               const normCorr = issue.correction.trim().toLowerCase();
-              return (
-                normOrig === normSrc ||
-                normOrig === normCorr ||
-                normUp === normCorr ||
-                normSrc.includes(normOrig) ||
-                normOrig.includes(normSrc)
-              );
+              return normOrig === normSrc || normOrig === normCorr || normUp === normCorr;
             });
           });
 
-          if (genuineUpgrades.length === 0) return null;
-          return <VocabularyUpgradeTable upgrades={genuineUpgrades} />;
+          const displayUpgrades = genuineUpgrades.length > 0 ? genuineUpgrades : evaluation.vocabularyUpgrades;
+          return <VocabularyUpgradeTable upgrades={displayUpgrades} />;
         })()}
       </div>
     </div>

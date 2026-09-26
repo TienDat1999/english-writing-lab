@@ -10,9 +10,11 @@ import { Button } from "@/components/ui/button";
 export function StartLearningButton({
   lessonSlug,
   isLoggedIn,
+  label,
 }: {
   lessonSlug: string;
   isLoggedIn: boolean;
+  label?: string;
 }) {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
@@ -74,9 +76,9 @@ export function StartLearningButton({
             <span>Đang chuẩn bị câu hỏi...</span>
           </>
         ) : isLoggedIn ? (
-          <span>Bắt đầu học ngay →</span>
+          <span>{label || "Bắt đầu luyện tập ngay →"}</span>
         ) : (
-          <span>Đăng nhập để học bài này →</span>
+          <span>Đăng nhập để luyện tập →</span>
         )}
       </Button>
 
