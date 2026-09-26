@@ -23,7 +23,6 @@ const kindBadges: Record<string, { label: string; badge: string }> = {
   COLLOCATION: { label: "Collocation", badge: "bg-amber-50 text-amber-900 border-amber-200" },
   TOPIC_VOCABULARY: { label: "Từ vựng chuyên đề", badge: "bg-blue-50 text-blue-800 border-blue-200" },
   SYNONYM: { label: "Từ đồng nghĩa", badge: "bg-purple-50 text-purple-800 border-purple-200" },
-  PARAPHRASE: { label: "Kỹ thuật Paraphrase", badge: "bg-emerald-50 text-emerald-800 border-emerald-200" },
   TEMPLATE: { label: "Mẫu câu & Dàn ý", badge: "bg-rose-50 text-rose-800 border-rose-200" },
 };
 
@@ -50,7 +49,6 @@ export default async function PublicLessonsPage({ searchParams }: LessonsPagePro
     { id: "COLLOCATION", label: "Collocation" },
     { id: "TOPIC_VOCABULARY", label: "Từ vựng (Vocabulary)" },
     { id: "SYNONYM", label: "Từ đồng nghĩa" },
-    { id: "PARAPHRASE", label: "Paraphrase" },
     { id: "TEMPLATE", label: "Mẫu câu (Template)" },
   ];
 
@@ -80,7 +78,7 @@ export default async function PublicLessonsPage({ searchParams }: LessonsPagePro
           </h1>
 
           <p className="text-xs sm:text-sm text-slate-300 leading-relaxed max-w-xl">
-            Các Bộ bài học Từ vựng, Collocations, Mẫu câu và Kỹ thuật Paraphrase được biên soạn theo lộ trình để bạn lấy về học và ôn tập hàng ngày.
+            Các Bộ bài học Từ vựng, Collocations và Mẫu câu được biên soạn theo lộ trình để bạn lấy về học và ôn tập hàng ngày.
           </p>
         </div>
       </div>
