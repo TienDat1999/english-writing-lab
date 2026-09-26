@@ -54,6 +54,14 @@ export default async function PublicLessonsPage({ searchParams }: LessonsPagePro
     { id: "TEMPLATE", label: "Mẫu câu (Template)" },
   ];
 
+  const showPresetCard =
+    (selectedKind === "ALL" || selectedKind === "TEMPLATE") &&
+    (!searchQuery ||
+      "vstep writing templates: lắp ghép câu theo cấu trúc c-m-e-l".includes(searchQuery) ||
+      "mẫu câu & dàn ý".includes(searchQuery) ||
+      "template".includes(searchQuery) ||
+      "vstep".includes(searchQuery));
+
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8 space-y-8">
       {/* Header Banner */}
@@ -122,13 +130,8 @@ export default async function PublicLessonsPage({ searchParams }: LessonsPagePro
         </form>
       </div>
 
-      {/* Featured Writing Template Preset */}
-      {(selectedKind === "ALL" || selectedKind === "TEMPLATE") && !searchQuery && (
-        <VstepTemplatePreset />
-      )}
-
       {/* Collections Grid */}
-      {collections.length === 0 ? (
+      {collections.length === 0 && !showPresetCard ? (
         <div className="rounded-2xl border border-dashed border-slate-200 bg-white p-16 text-center shadow-2xs">
           <div className="mx-auto grid size-14 place-items-center rounded-2xl bg-amber-50 text-amber-700">
             <HugeiconsIcon icon={Layers01Icon} size={28} />
@@ -147,6 +150,7 @@ export default async function PublicLessonsPage({ searchParams }: LessonsPagePro
         </div>
       ) : (
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {showPresetCard && <VstepTemplatePreset />}
           {collections.map((col) => {
             const kindInfo = kindBadges[col.kind || ""] || {
               label: "Bài học",
