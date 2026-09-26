@@ -71,9 +71,14 @@ export function VstepTemplatePreset() {
 
         <div className="flex shrink-0 items-center gap-2">
           {result ? (
-            <Button asChild size="sm" className="h-8 px-3 rounded-lg text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white">
-              <Link href="#uploaded-quiz-topics">Xem chủ đề vừa thêm →</Link>
-            </Button>
+            <div className="flex flex-wrap items-center gap-2">
+              <Button asChild size="sm" className="h-8 px-3 rounded-lg text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-2xs">
+                <Link href="/dashboard/review?category=TEMPLATE">Luyện Template ngay →</Link>
+              </Button>
+              <Button asChild size="sm" variant="outline" className="h-8 px-3 rounded-lg text-xs font-semibold bg-white border-slate-200 text-slate-700 hover:bg-slate-50">
+                <Link href="/dashboard/learning">Về Thư viện</Link>
+              </Button>
+            </div>
           ) : (
             <Button
               size="sm"

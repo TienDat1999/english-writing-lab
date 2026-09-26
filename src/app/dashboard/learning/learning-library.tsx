@@ -27,7 +27,6 @@ import type {
   PaginatedResult,
   UploadedQuizTopicView,
 } from "@/server/learning/learning.service";
-import { VstepTemplatePreset } from "./vstep-template-preset";
 
 const statusConfig: Record<
   LearningItemView["status"],
@@ -423,9 +422,6 @@ export function LearningLibrary({
       {/* TAB 1: CHỦ ĐỀ CỦA TÔI */}
       {activeTab === "my-topics" && (
         <div className="space-y-5">
-          {/* Banner giới thiệu VSTEP Writing Templates tinh gọn */}
-          <VstepTemplatePreset />
-
           {/* Thanh lọc Khoa học: Danh mục Pills + Tìm kiếm chủ đề */}
           <div className="flex flex-col gap-3 rounded-xl border border-slate-200/90 bg-white p-3 sm:p-3.5 shadow-2xs md:flex-row md:items-center md:justify-between">
             {/* Category Pills */}

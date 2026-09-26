@@ -1,7 +1,5 @@
 import {
   ArrowRight01Icon,
-  BookOpen01Icon,
-  Clock01Icon,
   Layers01Icon,
   Search01Icon,
   SparklesIcon,
@@ -9,10 +7,10 @@ import {
 import { HugeiconsIcon } from "@hugeicons/react";
 import Link from "next/link";
 
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { listPublicCollections } from "@/server/content/public-content.service";
+import { VstepTemplatePreset } from "@/app/dashboard/learning/vstep-template-preset";
 
 type LessonsPageProps = {
   searchParams: Promise<{
@@ -123,6 +121,11 @@ export default async function PublicLessonsPage({ searchParams }: LessonsPagePro
           </Button>
         </form>
       </div>
+
+      {/* Featured Writing Template Preset */}
+      {(selectedKind === "ALL" || selectedKind === "TEMPLATE") && !searchQuery && (
+        <VstepTemplatePreset />
+      )}
 
       {/* Collections Grid */}
       {collections.length === 0 ? (
