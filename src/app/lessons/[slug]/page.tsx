@@ -9,12 +9,9 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { getSession } from "@/server/auth/session";
 import { getPublicLessonDetail } from "@/server/content/public-content.service";
 
-import { LessonPreviewQuiz } from "./lesson-preview-quiz";
 import { StartLearningButton } from "./start-learning-button";
 
 type LessonDetailPageProps = {
@@ -138,14 +135,6 @@ export default async function PublicLessonDetailPage({ params }: LessonDetailPag
             )}
           </div>
 
-          {/* Interactive Preview Exercises */}
-          {lessonDetail.previewExercises && lessonDetail.previewExercises.length > 0 && (
-            <div className="space-y-3">
-              {lessonDetail.previewExercises.map((exercise) => (
-                <LessonPreviewQuiz key={exercise.id} exercise={exercise} />
-              ))}
-            </div>
-          )}
         </div>
 
         {/* Right Column: Sticky Action & Enrollment Card */}
