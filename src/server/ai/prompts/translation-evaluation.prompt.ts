@@ -50,8 +50,16 @@ export const TRANSLATION_EVALUATION_JSON_SCHEMA = {
           "explanationVi",
         ],
         properties: {
-          sourceQuote: { type: "string" },
-          correction: { type: "string" },
+          sourceQuote: {
+            type: "string",
+            description:
+              "The EXACT minimal word or short sub-phrase containing the mistake, copied verbatim from learnerAnswer. NEVER quote entire clauses or surrounding correct words (e.g. for 'our group have to go', quote 'have', not 'our group have to go').",
+          },
+          correction: {
+            type: "string",
+            description:
+              "The minimal replacement word or short sub-phrase corresponding strictly to sourceQuote (e.g. 'has', not 'our group has to go').",
+          },
           wordClass: {
             type: "string",
             description:
@@ -180,13 +188,18 @@ paraphraseExampleEn: MUST strictly follow and apply the EXACT sentence structure
 export function buildGrammarIssuesInstructions(): string[] {
   return [
     "Detailed rules for grammarIssues:",
-    "1. Every grammarIssues.sourceQuote must be copied exactly from the learner answer.",
-    "2. wordClass: Analyze and state the exact grammatical word class / part of speech (e.g. 'Transitive verb (Ngoại động từ)', 'Intransitive verb (Nội động từ)', 'Noun phrase (Cụm danh từ)', 'Relative pronoun (Đại từ quan hệ)', 'Preposition (Giới từ)', 'Spelling typo (Lỗi chính tả)').",
-    "MANDATORY PRINCIPLE 1 (WORD CLASS DISTINCTION): Always determine the exact part of speech before judging prepositions or sentence roles to prevent wrong corrections. For instance, words like 'support', 'contact', 'influence' have different rules as verbs vs nouns. NEVER advise removing a preposition without stating its verb vs noun word class.",
-    "MANDATORY PRINCIPLE 2 (SEPARATE ABSOLUTE GRAMMAR ERRORS VS STYLE CHOICES): Categorize issueType strictly as 'GRAMMAR_ERROR' (genuine grammatical syntax/agreement breaks), 'STYLE_SUGGESTION' (stylistic preference, naturalness, formality), or 'SPELLING_TYPO' (typos). Do NOT claim stylistic options are grammatically wrong!",
-    "MANDATORY PRINCIPLE 3 (CONTEXT-AWARE ANALYSIS & EXAMPLES): In reasonVi, explain why the original phrase is incorrect or suboptimal in the context of the entire sentence rather than in isolation. In contextAndExampleVi, provide context and concrete examples explaining when the learner's original construction COULD still be correct and demonstrate proper usage.",
-    "3. explanationVi: A concise, student-friendly 1-2 sentence Vietnamese explanation.",
-    "4. Return an empty grammarIssues array only when grammar is completely error-free.",
+    "MANDATORY PRINCIPLE 1 (MINIMAL ERROR SPAN - KHOANH VÙNG LỖI TỐI THIỂU):",
+    "- Every sourceQuote MUST be the exact, minimal word or short sub-phrase in learner answer that has the issue. NEVER include surrounding correct words, noun phrases, or entire clauses in sourceQuote.",
+    "- Example 1 (Subject-verb agreement): If learner wrote 'our group have to get ideas', sourceQuote MUST be 'have' and correction MUST be 'has'. NEVER set sourceQuote to 'our group have to get ideas'.",
+    "- Example 2 (Connector / Pronoun / Modifier): If learner wrote 'this way will take time', sourceQuote MUST be 'this way' and correction MUST be 'this' (or 'which'). NEVER set sourceQuote to 'this way will take time'.",
+    "- Example 3 (Preposition / Transitive verb): If learner wrote 'we will discuss about the plan', sourceQuote MUST be 'discuss about' (or 'about') and correction MUST be 'discuss' (or ''). NEVER quote 'we will discuss about the plan'.",
+    "- Example 4 (Spelling typo): If learner wrote 'importent goal', sourceQuote MUST be 'importent' and correction MUST be 'important'.",
+    "- If the learner made multiple distinct errors across the sentence, ALWAYS split them into separate grammarIssues objects instead of bundling them into one giant quote.",
+    "MANDATORY PRINCIPLE 2 (WORD CLASS DISTINCTION): Always determine the exact part of speech before judging prepositions or sentence roles to prevent wrong corrections. For instance, words like 'support', 'contact', 'influence' have different rules as verbs vs nouns. NEVER advise removing a preposition without stating its verb vs noun word class.",
+    "MANDATORY PRINCIPLE 3 (SEPARATE ABSOLUTE GRAMMAR ERRORS VS STYLE CHOICES): Categorize issueType strictly as 'GRAMMAR_ERROR' (genuine grammatical syntax/agreement breaks), 'STYLE_SUGGESTION' (stylistic preference, naturalness, formality), or 'SPELLING_TYPO' (typos). Do NOT claim stylistic options are grammatically wrong!",
+    "MANDATORY PRINCIPLE 4 (CONTEXT-AWARE ANALYSIS & EXAMPLES): In reasonVi, explain why the original phrase is incorrect or suboptimal in the context of the entire sentence rather than in isolation. In contextAndExampleVi, provide context and concrete examples explaining when the learner's original construction COULD still be correct and demonstrate proper usage.",
+    "explanationVi: A concise, student-friendly 1-2 sentence Vietnamese explanation.",
+    "Return an empty grammarIssues array only when grammar is completely error-free.",
   ];
 }
 

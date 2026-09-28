@@ -9,6 +9,49 @@ import type { LearningItemView } from "@/server/learning/learning.service";
 
 import type { GrammarIssue } from "./types";
 
+function trimCommonWords(
+  source: string,
+  target: string,
+): { trimmedSource: string; trimmedTarget: string; leadingOffset: number } {
+  if (!source || !target) return { trimmedSource: source, trimmedTarget: target, leadingOffset: 0 };
+
+  const sourceTokens = source.split(/(\s+)/);
+  const targetTokens = target.split(/(\s+)/);
+
+  // Find common prefix tokens (case-insensitive)
+  let prefixCount = 0;
+  let leadingOffset = 0;
+  while (
+    prefixCount < sourceTokens.length &&
+    prefixCount < targetTokens.length &&
+    sourceTokens[prefixCount].toLowerCase() === targetTokens[prefixCount].toLowerCase()
+  ) {
+    leadingOffset += sourceTokens[prefixCount].length;
+    prefixCount++;
+  }
+
+  // Find common suffix tokens (case-insensitive)
+  let suffixSource = sourceTokens.length - 1;
+  let suffixTarget = targetTokens.length - 1;
+  while (
+    suffixSource >= prefixCount &&
+    suffixTarget >= prefixCount &&
+    sourceTokens[suffixSource].toLowerCase() === targetTokens[suffixTarget].toLowerCase()
+  ) {
+    suffixSource--;
+    suffixTarget--;
+  }
+
+  const trimmedSource = sourceTokens.slice(prefixCount, suffixSource + 1).join("");
+  const trimmedTarget = targetTokens.slice(prefixCount, suffixTarget + 1).join("");
+
+  if (trimmedSource.trim().length > 0 || trimmedTarget.trim().length > 0) {
+    return { trimmedSource, trimmedTarget, leadingOffset };
+  }
+
+  return { trimmedSource: source, trimmedTarget: target, leadingOffset: 0 };
+}
+
 export function renderAnnotatedAnswer(
   text: string,
   issues?: GrammarIssue[],
@@ -32,17 +75,24 @@ export function renderAnnotatedAnswer(
     const rawQuote = issue.sourceQuote?.trim();
     if (!rawQuote) continue;
 
+    const { trimmedSource, trimmedTarget, leadingOffset } = trimCommonWords(
+      rawQuote,
+      issue.correction || "",
+    );
+
     let start = text.indexOf(rawQuote);
     if (start === -1) {
       start = lowerText.indexOf(rawQuote.toLowerCase());
     }
 
     if (start !== -1) {
+      const matchStart = start + leadingOffset;
+      const matchEnd = matchStart + trimmedSource.length;
       matches.push({
-        start,
-        end: start + rawQuote.length,
-        sourceQuote: text.slice(start, start + rawQuote.length),
-        correction: issue.correction,
+        start: matchStart,
+        end: matchEnd,
+        sourceQuote: text.slice(matchStart, matchEnd),
+        correction: trimmedTarget,
         issue,
       });
     }

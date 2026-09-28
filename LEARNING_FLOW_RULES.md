@@ -38,7 +38,22 @@ Khi người học thực hiện bất kỳ bài tập nào trong toàn bộ d�
 
 ---
 
-## 3. Quy Ước Code Dành Cho Developer & AI (Technical Implementation Rules)
+## 3. Quy Tắc Khoanh Vùng Lỗi Tối Thiểu (Minimal Error Span Rule in AI Evaluation)
+Khi AI phân tích lỗi câu viết của người học (`grammarIssues`):
+
+1. **Chỉ trích dẫn từ/cụm từ sai tối thiểu (`sourceQuote`):**
+   - `sourceQuote` bắt buộc chỉ chứa đúng từ hoặc nhóm từ ngắn thực sự bị lỗi.
+   - Tuyệt đối **KHÔNG** quét nguyên cả mệnh đề hoặc bao gồm các từ đúng xung quanh vào `sourceQuote`.
+   - *Ví dụ 1:* Nếu người học viết `"our group have to get ideas"`, lỗi chia động từ thì `sourceQuote` phải là `"have"` (sửa thành `"has"`), tuyệt đối KHÔNG trích dẫn `"our group have to get ideas"`.
+   - *Ví dụ 2:* Nếu người học viết `"this way will take time"`, lỗi dùng từ thì `sourceQuote` là `"this way"` (sửa thành `"this"`), tuyệt đối KHÔNG trích dẫn `"this way will take time"`.
+2. **Tách riêng các lỗi độc lập:**
+   - Nếu câu có nhiều lỗi khác nhau, AI phải tách thành các object `grammarIssues` riêng biệt, không gộp thành 1 cụm dài.
+3. **Frontend Fallback Resilience:**
+   - Hàm `renderAnnotatedAnswer` tự động loại bỏ các từ trùng lặp ở đầu (prefix) và cuối (suffix) giữa `sourceQuote` và `correction` để đảm bảo giao diện luôn chỉ gạch đúng từ sai, không gây rối mắt người học.
+
+---
+
+## 4. Quy Ước Code Dành Cho Developer & AI (Technical Implementation Rules)
 
 1. **State Tracking trong Session Component:**
    - Phải luôn có cờ/state ghi nhận kết quả câu hiện tại (ví dụ `currentAnswerStatus: boolean | null`).
