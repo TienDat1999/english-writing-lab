@@ -92,10 +92,12 @@ export function StepLearningSession({
   const [currentIndex, setCurrentIndex] = useState(0);
   const [retryItems, setRetryItems] = useState<LearningItemView[]>([]);
   const [round, setRound] = useState(1);
+  const [currentAnswerStatus, setCurrentAnswerStatus] = useState<boolean | null>(null);
   const [mistakeIds, setMistakeIds] = useState<Set<string>>(() => new Set());
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [completed, setCompleted] = useState(false);
+
   const stage = stages[stageIndex];
   const item = roundItems[currentIndex];
 
@@ -112,12 +114,14 @@ export function StepLearningSession({
   }
 
   function moveForward(nextRetryItems: LearningItemView[]) {
+    // 1. Nếu còn câu trong vòng hiện tại -> chuyển câu tiếp theo trong vòng
     if (currentIndex + 1 < roundItems.length) {
       setRetryItems(nextRetryItems);
       setCurrentIndex((index) => index + 1);
       return;
     }
 
+    // 2. Nếu đã hết câu trong vòng nhưng CÒN câu làm sai -> tạo vòng mới lặp lại các câu sai
     if (nextRetryItems.length > 0) {
       setRoundItems(uniqueItems(nextRetryItems));
       setRetryItems([]);
@@ -126,6 +130,7 @@ export function StepLearningSession({
       return;
     }
 
+    // 3. Đã đúng 100% tất cả các câu trong Step này -> mở khóa chuyển sang Step kế tiếp
     if (stageIndex < stages.length - 1) {
       setStageIndex((index) => index + 1);
       setRoundItems(initialItems);
@@ -135,6 +140,7 @@ export function StepLearningSession({
       return;
     }
 
+    // 4. Đã hoàn thành 100% cả 3 Step
     setCompleted(true);
   }
 
@@ -144,15 +150,23 @@ export function StepLearningSession({
     const previousItem = roundItems[currentIndex - 1];
     setRetryItems((current) => current.filter((retryItem) => retryItem.id !== previousItem.id));
     setCurrentIndex((index) => index - 1);
+    setCurrentAnswerStatus(null);
     setError(null);
   }
 
-  async function continueAfterAnswer(isCorrect: boolean) {
+  async function continueAfterAnswer() {
     if (!item || isSaving) return;
 
     setIsSaving(true);
     setError(null);
-    const nextRetryItems = isCorrect ? retryItems : [...retryItems, item];
+
+    // Xác định câu hiện tại đúng hay sai (mặc định true nếu không có status)
+    const isCorrect = currentAnswerStatus ?? true;
+    const nextRetryItems = isCorrect
+      ? retryItems
+      : retryItems.some((r) => r.id === item.id)
+        ? retryItems
+        : [...retryItems, item];
 
     if (!isCorrect) {
       setMistakeIds((current) => new Set(current).add(item.id));
@@ -162,11 +176,19 @@ export function StepLearningSession({
       if (stage.id === "APPLICATION" && isCorrect) {
         await saveCompletedItem(item);
       }
+      setCurrentAnswerStatus(null);
       moveForward(nextRetryItems);
     } catch {
       setError("Không thể lưu tiến độ. Thử lại nhé.");
     } finally {
       setIsSaving(false);
+    }
+  }
+
+  function handleItemAnswer(correct: boolean) {
+    setCurrentAnswerStatus(correct);
+    if (!correct && item) {
+      setMistakeIds((current) => new Set(current).add(item.id));
     }
   }
 
@@ -197,6 +219,7 @@ export function StepLearningSession({
           setCurrentIndex(0);
           setRetryItems([]);
           setRound(1);
+          setCurrentAnswerStatus(null);
           setMistakeIds(new Set());
           setCompleted(false);
         }}
@@ -221,53 +244,41 @@ export function StepLearningSession({
       {/* Stage Component Dispatcher */}
       {stage.id === "RECOGNITION" ? (
         <RecognitionPractice
-          key={`recognition:${round}:${item.id}:${currentIndex}`}
+          key={`recognition:${stageIndex}:${round}:${item.id}:${currentIndex}`}
           targetText={item.answerText}
           promptMeaning={item.promptText}
           options={options}
           categoryLabel={config.questionLabel}
           contextSentence={item.contextText}
-          onNext={() => void continueAfterAnswer(true)}
-          onAnswer={(correct) => {
-            if (!correct) {
-              setMistakeIds((current) => new Set(current).add(item.id));
-            }
-          }}
+          onNext={() => void continueAfterAnswer()}
+          onAnswer={handleItemAnswer}
           onBack={goBack}
           canGoBack={currentIndex > 0}
           saving={isSaving}
         />
       ) : stage.id === "TRANSLATION" ? (
         <ActiveRecallPractice
-          key={`recall:${round}:${item.id}:${currentIndex}`}
+          key={`recall:${stageIndex}:${round}:${item.id}:${currentIndex}`}
           promptText={cleanMeaningText(item.promptText)}
           targetAnswer={item.answerText}
           topicText={item.topicText}
           placeholder={config.translationPlaceholder}
           hint={item.hintVi}
-          onNext={() => void continueAfterAnswer(true)}
-          onAnswer={(correct) => {
-            if (!correct) {
-              setMistakeIds((current) => new Set(current).add(item.id));
-            }
-          }}
+          onNext={() => void continueAfterAnswer()}
+          onAnswer={handleItemAnswer}
           onBack={goBack}
           canGoBack={currentIndex > 0}
           saving={isSaving}
         />
       ) : (
         <SentenceApplicationPractice
-          key={`application:${round}:${item.id}:${currentIndex}`}
+          key={`application:${stageIndex}:${round}:${item.id}:${currentIndex}`}
           itemId={item.id}
           targetPhrase={item.answerText}
           meaningPrompt={cleanMeaningText(item.promptText)}
           initialApplicationPromptVi={item.applicationPromptVi}
-          onNext={() => void continueAfterAnswer(true)}
-          onAnswer={(correct) => {
-            if (!correct) {
-              setMistakeIds((current) => new Set(current).add(item.id));
-            }
-          }}
+          onNext={() => void continueAfterAnswer()}
+          onAnswer={(correct) => handleItemAnswer(correct)}
           onBack={goBack}
           canGoBack={currentIndex > 0}
           saving={isSaving}
@@ -277,9 +288,4 @@ export function StepLearningSession({
       {error ? <p className="mt-4 text-sm text-destructive" role="alert">{error}</p> : null}
     </div>
   );
-}
-
-// Backward-compatibility alias
-export function ParaphraseLearningSession({ initialItems }: { initialItems: LearningItemView[] }) {
-  return <StepLearningSession initialItems={initialItems} config={PARAPHRASE_CONFIG} />;
 }

@@ -1,0 +1,13 @@
+# Project Guidelines & Business Rules
+
+## 1. Universal Learning Flow Rule
+Always strictly follow `LEARNING_FLOW_RULES.md`:
+- NEVER add on-the-spot retry mechanisms ("Sửa lại", "Thử lại", "Viết lại") after submitting an answer or receiving evaluation feedback.
+- If there are errors (spelling mistakes, grammar issues, score < 70, wrong quiz option, missing target phrase), user must ONLY see the feedback/explanation and click "Tiếp tục" / "Câu tiếp theo".
+- Any item with errors must automatically be queued for retry in the next round (`retryItems`).
+
+## 2. 3-Step Review Flow Rule (Collocation, Paraphrase, Topic Vocabulary)
+- In 3-step learning sessions (Step 1: Nhận diện nghĩa -> Step 2: Gợi nhớ chủ động -> Step 3: Ứng dụng vào câu):
+  - Every step MUST repeat failed questions in review rounds (Vòng ôn lại 2, 3...) until 100% of items in that step are answered correctly.
+  - ONLY when all questions in the current step are answered correctly (retry queue is empty) is the user allowed to advance to the next step.
+  - NEVER hardcode `onNext` with `isCorrect = true`. Always track `currentAnswerStatus` and properly append failed items to `retryItems`.
