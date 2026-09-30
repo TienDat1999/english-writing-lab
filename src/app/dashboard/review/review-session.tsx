@@ -61,6 +61,7 @@ export function ReviewSession({
 
   // Results tracker for end-of-session summary
   const [results, setResults] = useState<SessionResultRecord[]>([]);
+  const [itemAttemptCounts, setItemAttemptCounts] = useState<Record<string, number>>({});
   const [isPaused, setIsPaused] = useState(false);
   const [savedSessionNotice, setSavedSessionNotice] = useState<{
     itemsCount: number;
@@ -106,6 +107,7 @@ export function ReviewSession({
 
   const item = items[0];
   const completed = totalItems - items.length;
+  const currentItemAttempt = item ? (itemAttemptCounts[item.id] || 0) + 1 : 1;
   const isTranslation = item?.sourceType === "TRANSLATION";
   const isUploadedQuiz = item?.sourceType === "UPLOADED_QUIZ";
   const isPhrase = item?.sourceType === "PHRASE" || isUploadedQuiz;
@@ -118,6 +120,13 @@ export function ReviewSession({
   }
 
   function goToNextItem(shouldRepeat = false, record?: { isCorrect: boolean; userDraft?: string; feedback?: string }) {
+    if (item) {
+      setItemAttemptCounts((current) => ({
+        ...current,
+        [item.id]: (current[item.id] || 0) + 1,
+      }));
+    }
+
     if (item && record) {
       const updatedResults = [
         ...results,
@@ -216,6 +225,7 @@ export function ReviewSession({
     setItems(wrongItems);
     setTotalItems(wrongItems.length);
     setResults([]);
+    setItemAttemptCounts({});
     setDraft("");
     setRevealed(false);
     setEvaluation(null);
@@ -331,6 +341,7 @@ export function ReviewSession({
         currentItemTopicText={item.topicText}
         completed={completed}
         totalItems={totalItems}
+        itemAttemptCount={currentItemAttempt}
         onPause={() => {
           persistProgress(items, results);
           setIsPaused(true);
