@@ -72,24 +72,24 @@ export function ReviewSessionHeader({
       </div>
 
       {/* Right Column: Actions & Progress bar with count */}
-      <div className="w-full md:w-64 lg:w-72 shrink-0 space-y-2">
+      <div className="w-full md:w-80 lg:w-96 shrink-0 space-y-2">
         {/* Top row: Action buttons + Repeat indicator */}
-        <div className="flex items-center justify-between gap-1.5 min-h-7">
+        <div className="flex items-center justify-between gap-2 min-h-7">
           {itemAttemptCount && itemAttemptCount > 1 ? (
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-200 bg-amber-50 px-2.5 py-0.5 text-xs font-semibold text-amber-700 shadow-2xs animate-in fade-in">
-              <span className="inline-block size-1.5 rounded-full bg-amber-500 animate-pulse" />
+            <span className="inline-flex items-center gap-1.5 whitespace-nowrap shrink-0 rounded-full border border-amber-200 bg-amber-50 px-2.5 py-0.5 text-xs font-semibold text-amber-700 shadow-2xs animate-in fade-in">
+              <span className="inline-block size-1.5 shrink-0 rounded-full bg-amber-500 animate-pulse" />
               Luyện lại lần {itemAttemptCount}
             </span>
           ) : (
             <span />
           )}
 
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1.5 shrink-0">
             <Button
               onClick={onPause}
               size="sm"
               variant="outline"
-              className="rounded-xl text-xs h-7 px-2.5 gap-1 hover:bg-slate-50"
+              className="rounded-xl text-xs h-7 px-2.5 gap-1 hover:bg-slate-50 shrink-0"
             >
               <HugeiconsIcon icon={PauseIcon} size={13} />
               <span>Tạm dừng</span>
@@ -99,7 +99,7 @@ export function ReviewSessionHeader({
               <Button
                 onClick={activeNextAction}
                 size="sm"
-                className="rounded-xl text-xs h-7 px-3 gap-1 font-bold shadow-sm"
+                className="rounded-xl text-xs h-7 px-3 gap-1 font-bold shadow-sm shrink-0"
               >
                 <span>Tiếp tục</span>
                 <kbd className="hidden sm:inline-block rounded bg-primary-foreground/20 px-1 py-0.2 text-[9px] font-mono leading-none">
