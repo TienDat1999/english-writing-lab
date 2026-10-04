@@ -1,10 +1,6 @@
 "use client";
 
-import {
-  AlertCircleIcon,
-  RefreshIcon,
-  SparklesIcon,
-} from "@hugeicons/core-free-icons";
+import { SparklesIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import Link from "next/link";
 
@@ -17,16 +13,14 @@ import type { SessionResultRecord } from "../types";
 export type SessionSummaryProps = {
   results: SessionResultRecord[];
   totalItems: number;
-  onRetryWrongOnly: () => void;
+  onRetryWrongOnly?: () => void;
 };
 
 export function SessionSummary({
   results,
   totalItems,
-  onRetryWrongOnly,
 }: SessionSummaryProps) {
   const correctCount = results.filter((r) => r.isCorrect).length;
-  const wrongRecords = results.filter((r) => !r.isCorrect);
   const accuracy = totalItems > 0 ? Math.round((correctCount / totalItems) * 100) : 100;
 
   return (
@@ -65,16 +59,7 @@ export function SessionSummary({
 
         {/* Action buttons */}
         <div className="flex flex-wrap justify-center gap-3">
-          {wrongRecords.length > 0 && (
-            <Button
-              onClick={onRetryWrongOnly}
-              className="rounded-xl font-bold bg-rose-600 hover:bg-rose-700 text-white"
-            >
-              <HugeiconsIcon icon={RefreshIcon} size={18} className="mr-1.5" />
-              Luyện lại riêng {wrongRecords.length} câu chưa đạt
-            </Button>
-          )}
-          <Button asChild className="rounded-xl font-bold" variant={wrongRecords.length > 0 ? "outline" : "default"}>
+          <Button asChild className="rounded-xl font-bold">
             <Link href="/dashboard/learning">Về Thư viện học</Link>
           </Button>
           <Button asChild variant="outline" className="rounded-xl">
@@ -82,33 +67,6 @@ export function SessionSummary({
           </Button>
         </div>
       </Card>
-
-      {/* Detailed Breakdown */}
-      {wrongRecords.length > 0 && (
-        <Card className="border border-rose-200 bg-white p-6 shadow-sm">
-          <div className="mb-4 flex items-center gap-2 text-rose-700">
-            <HugeiconsIcon icon={AlertCircleIcon} size={20} />
-            <h4 className="font-heading text-base font-bold">Các câu cần củng cố lại:</h4>
-          </div>
-          <div className="space-y-3">
-            {wrongRecords.map((record, index) => (
-              <div key={index} className="rounded-xl border border-rose-100 bg-rose-50/40 p-4 text-xs space-y-1.5">
-                <p className="font-bold text-foreground text-sm">{record.item.promptText}</p>
-                {record.userDraft && (
-                  <p className="text-rose-700">
-                    <span className="font-semibold">Bạn nhập: </span>
-                    {record.userDraft}
-                  </p>
-                )}
-                <p className="text-emerald-700 font-mono text-[13px]">
-                  <span className="font-sans font-semibold">Đáp án đúng: </span>
-                  {record.item.answerText}
-                </p>
-              </div>
-            ))}
-          </div>
-        </Card>
-      )}
     </div>
   );
 }

@@ -217,22 +217,6 @@ export function ReviewSession({
     }
   }
 
-  function handleRetryWrongOnly() {
-    const wrongRecords = results.filter((r) => !r.isCorrect);
-    const wrongItems = wrongRecords.map((r) => r.item);
-    if (wrongItems.length === 0) return;
-
-    setItems(wrongItems);
-    setTotalItems(wrongItems.length);
-    setResults([]);
-    setItemAttemptCounts({});
-    setDraft("");
-    setRevealed(false);
-    setEvaluation(null);
-    setError(null);
-    setIsPaused(false);
-  }
-
   const isParaphraseUpload =
     sessionMode === "UPLOADED" &&
     (uploadedQuizType === "PARAPHRASE" ||
@@ -327,7 +311,6 @@ export function ReviewSession({
       <SessionSummary
         results={results}
         totalItems={totalItems}
-        onRetryWrongOnly={handleRetryWrongOnly}
       />
     );
   }
