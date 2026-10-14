@@ -6,7 +6,9 @@ import {
   BookOpen01Icon,
   DashboardSquare01Icon,
   Image01Icon,
+  Layers01Icon,
   Settings01Icon,
+  UserGroupIcon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import Link from "next/link";
@@ -16,6 +18,8 @@ const items = [
   { href: "/", icon: DashboardSquare01Icon, label: "Dashboard" },
   { href: "/analytics", icon: Analytics01Icon, label: "Thống kê" },
   { href: "/lessons", icon: BookOpen01Icon, label: "Kho bài học" },
+  { href: "/collections", icon: Layers01Icon, label: "Bộ sưu tập" },
+  { href: "/users", icon: UserGroupIcon, label: "Học viên" },
   { href: "/media", icon: Image01Icon, label: "Media" },
   { href: "/reports", icon: AlertCircleIcon, label: "Báo cáo sự cố" },
   { href: "/settings", icon: Settings01Icon, label: "Cài đặt" },

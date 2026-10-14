@@ -11,6 +11,7 @@ const navigationRules: Array<{
   { href: "/analytics" },
   { href: "/lessons", permissions: ["CONTENT_DRAFT_VIEW"] },
   { href: "/collections", permissions: ["CONTENT_DRAFT_VIEW"] },
+  { href: "/users", permissions: ["SUPPORT_CASE_HANDLE", "STAFF_ROLE_MANAGE"] },
   { href: "/media", permissions: ["CONTENT_DRAFT_VIEW"] },
   { href: "/reports", permissions: ["CONTENT_REPORT_HANDLE"] },
   { href: "/settings", permissions: ["STAFF_ROLE_MANAGE"] },

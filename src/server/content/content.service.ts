@@ -919,6 +919,33 @@ export async function publishScheduledLessonVersion(
   );
 }
 
+export async function publishAllDueScheduledLessonVersions(now = new Date()) {
+  await connectMongoose();
+  const dueVersions = await LessonVersion.find({
+    status: "SCHEDULED",
+    scheduledAt: { $lte: now },
+  }).select("_id");
+
+  const results = [];
+  for (const v of dueVersions) {
+    try {
+      const published = await publishScheduledLessonVersion(v._id.toString(), now);
+      results.push({ versionId: v._id.toString(), status: "PUBLISHED", error: null });
+    } catch (err) {
+      results.push({
+        versionId: v._id.toString(),
+        status: "FAILED",
+        error: err instanceof Error ? err.message : String(err),
+      });
+    }
+  }
+
+  return {
+    processedCount: results.length,
+    results,
+  };
+}
+
 export async function cancelLessonVersion(
   actorUserId: string,
   versionId: string,
