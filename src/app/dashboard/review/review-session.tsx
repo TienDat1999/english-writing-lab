@@ -24,10 +24,10 @@ import {
 } from "./components";
 import {
   COLLOCATION_CONFIG,
-  PARAPHRASE_CONFIG,
+  ParaphraseLearningSession,
   StepLearningSession,
   TOPIC_VOCABULARY_CONFIG,
-} from "./step-learning-session";
+} from "./paraphrase-learning-session";
 import {
   ratingLabels,
   type Rating,
@@ -217,13 +217,14 @@ export function ReviewSession({
     }
   }
 
+
   const isParaphraseUpload =
     sessionMode === "UPLOADED" &&
     (uploadedQuizType === "PARAPHRASE" ||
       (!uploadedQuizType && initialItems[0]?.quizType === "PARAPHRASE"));
 
   if (isParaphraseUpload) {
-    return <StepLearningSession initialItems={initialItems} config={PARAPHRASE_CONFIG} />;
+    return <ParaphraseLearningSession initialItems={initialItems} />;
   }
 
   const isCollocationUpload =

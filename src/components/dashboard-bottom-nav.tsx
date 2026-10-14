@@ -5,6 +5,7 @@ import {
   BookOpen01Icon,
   DashboardCircleIcon,
   Edit02Icon,
+  Mic01Icon,
   RepeatIcon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
@@ -13,10 +14,12 @@ import { usePathname } from "next/navigation";
 
 const mobileNavItems = [
   { href: "/dashboard", label: "Tổng quan", icon: DashboardCircleIcon, exact: true },
+  { href: "/dashboard/speaking", label: "Luyện nói", icon: Mic01Icon, exact: false },
   { href: "/dashboard/new", label: "Viết bài", icon: Edit02Icon, exact: false },
   { href: "/dashboard/learning", label: "Học", icon: BookOpen01Icon, exact: false },
   { href: "/dashboard/review", label: "Ôn tập", icon: RepeatIcon, exact: false },
 ];
+
 
 export function DashboardBottomNav() {
   const pathname = usePathname();

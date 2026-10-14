@@ -14,7 +14,7 @@ export const metadata: Metadata = {
     "A personal IELTS writing coach that turns your own mistakes into lasting progress.",
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="vi" className="h-full antialiased">
       <body className="flex min-h-full flex-col">

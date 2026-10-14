@@ -7,7 +7,7 @@ import {
   Target01Icon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 
 import { Button } from "@/components/ui/button";
 import type { LearningItemView } from "@/server/learning/learning.service";
@@ -43,14 +43,16 @@ export function TranslationResult({
   setActiveNextAction,
 }: TranslationResultProps) {
   const tier = getScoreTier(evaluation.score);
+  const onNextRef = useRef(onNext);
+  onNextRef.current = onNext;
 
   // Register next action for session header
   useEffect(() => {
     if (setActiveNextAction) {
-      setActiveNextAction(() => onNext);
+      setActiveNextAction(() => onNextRef.current());
       return () => setActiveNextAction(null);
     }
-  }, [onNext, setActiveNextAction]);
+  }, [setActiveNextAction]);
 
   // Keyboard shortcut listener: Enter to continue
   useEffect(() => {

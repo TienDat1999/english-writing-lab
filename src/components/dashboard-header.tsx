@@ -7,6 +7,7 @@ import {
   Edit02Icon,
   Layers01Icon,
   Logout01Icon,
+  Mic01Icon,
   RepeatIcon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
@@ -19,11 +20,13 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 const navItems = [
   { href: "/dashboard", label: "Tổng quan", icon: DashboardCircleIcon, exact: true },
+  { href: "/dashboard/speaking", label: "Luyện nói", icon: Mic01Icon, exact: false },
   { href: "/dashboard/new", label: "Viết bài", icon: Edit02Icon, exact: false },
   { href: "/dashboard/learning", label: "Học", icon: BookOpen01Icon, exact: false },
   { href: "/dashboard/review", label: "Ôn tập", icon: RepeatIcon, exact: false },
   { href: "/lessons", label: "Kho bài học", icon: Layers01Icon, exact: false },
 ];
+
 
 export function DashboardHeader({
   user,
