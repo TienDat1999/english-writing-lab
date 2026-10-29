@@ -5,7 +5,7 @@ import { connectMongoose } from "@/server/db/mongoose";
 import { sprint30DaysCurriculum } from "./sprint.data";
 import { UserSprintEnrollment } from "./sprint-enrollment.schema";
 import { UserDayProgress } from "./user-day-progress.schema";
-import type { SprintDayPlan, SprintStationType } from "./sprint.types";
+import type { SprintStationType } from "./sprint.types";
 
 const SPRINT_SLUG = "vstep-b2-30-day-sprint";
 

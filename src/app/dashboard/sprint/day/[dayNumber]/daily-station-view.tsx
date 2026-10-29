@@ -10,12 +10,9 @@ import {
   CheckmarkCircle02Icon,
   Clock01Icon,
   Edit02Icon,
-  FireIcon,
   Mic01Icon,
-  PlayIcon,
   SparklesIcon,
   StopIcon,
-  Target01Icon,
   Tick02Icon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
@@ -101,9 +98,15 @@ export function DailyStationView({
   useEffect(() => {
     let interval: NodeJS.Timeout;
     if (isPrepActive && prepTimer > 0) {
-      interval = setInterval(() => setPrepTimer((prev) => prev - 1), 1000);
-    } else if (prepTimer === 0 && isPrepActive) {
-      setIsPrepActive(false);
+      interval = setInterval(() => {
+        setPrepTimer((prev) => {
+          if (prev <= 1) {
+            setIsPrepActive(false);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
     }
     return () => clearInterval(interval);
   }, [isPrepActive, prepTimer]);

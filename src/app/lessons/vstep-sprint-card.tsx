@@ -2,9 +2,7 @@ import Link from "next/link";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
   ArrowRight01Icon,
-  BookOpen01Icon,
   Calendar03Icon,
-  Clock01Icon,
   FireIcon,
   SparklesIcon,
   Target01Icon,

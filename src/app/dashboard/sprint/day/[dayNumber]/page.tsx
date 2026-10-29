@@ -1,4 +1,4 @@
-import { notFound, redirect } from "next/navigation";
+import { notFound } from "next/navigation";
 import { getSession } from "@/server/auth/session";
 import { getDayDetail } from "@/server/sprint/sprint.service";
 import { DailyStationView } from "./daily-station-view";

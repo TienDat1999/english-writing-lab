@@ -1,7 +1,6 @@
 import Link from "next/link";
 import {
   ArrowLeft01Icon,
-  BookOpen01Icon,
   Calendar03Icon,
   CheckmarkCircle02Icon,
   Clock01Icon,
@@ -9,7 +8,6 @@ import {
   LockIcon,
   PlayIcon,
   SparklesIcon,
-  Target01Icon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 

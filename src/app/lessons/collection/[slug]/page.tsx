@@ -8,7 +8,6 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
-import { Button } from "@/components/ui/button";
 import { getSession } from "@/server/auth/session";
 import { getPublicCollectionDetail } from "@/server/content/public-content.service";
 import { EnrollCollectionButton } from "./enroll-collection-button";
