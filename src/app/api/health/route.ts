@@ -27,6 +27,26 @@ export async function GET() {
     if (!res.ok) {
       const payload = await res.json().catch(() => ({}));
       openaiError = payload?.error?.message || `HTTP ${res.status}`;
+    } else {
+      // Test actual chat completion with 1 token to verify model quota & billing status
+      const chatRes = await fetch("https://api.openai.com/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${aiEnv.OPENAI_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: openaiModel,
+          messages: [{ role: "user", content: "ping" }],
+          max_tokens: 1,
+        }),
+        signal: AbortSignal.timeout(8000),
+      });
+      openaiReady = chatRes.ok;
+      if (!chatRes.ok) {
+        const payload = await chatRes.json().catch(() => ({}));
+        openaiError = payload?.error?.message || `Chat HTTP ${chatRes.status}`;
+      }
     }
   } catch (err) {
     openaiError = err instanceof Error ? err.message : String(err);
