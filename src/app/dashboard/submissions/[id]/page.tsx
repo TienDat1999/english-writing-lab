@@ -113,6 +113,10 @@ export default async function SubmissionPage({ params }: SubmissionPageProps) {
   const isProcessing =
     submission.status === "QUEUED" || submission.status === "ANALYZING";
 
+  const isLetter =
+    submission.questionType?.toLowerCase().includes("letter") ||
+    submission.questionType?.toLowerCase().includes("thư");
+
   const navItems = submission.analysis
     ? [
         { id: "overview", label: "Điểm số & Tổng quan" },
@@ -135,9 +139,9 @@ export default async function SubmissionPage({ params }: SubmissionPageProps) {
             ]
           : []),
         ...(submission.analysis.rewrittenEssay
-          ? [{ id: "model-essay", label: "Bài viết mẫu B2" }]
+          ? [{ id: "model-essay", label: isLetter ? "Bức thư mẫu B2" : "Bài viết mẫu B2" }]
           : []),
-        { id: "criteria", label: "6 Tiêu chí IELTS" },
+        { id: "criteria", label: isLetter ? "Tiêu chí chấm Thư" : "6 Tiêu chí IELTS" },
         { id: "original", label: "Bài làm gốc" },
       ]
     : [];
@@ -151,7 +155,11 @@ export default async function SubmissionPage({ params }: SubmissionPageProps) {
         <div>
           <div className="flex flex-wrap items-center gap-2 mb-1.5">
             <Badge variant="secondary" className="font-semibold text-xs">
-              {submission.taskType === "TASK_1" ? "IELTS Academic Task 1" : "IELTS Task 2"}
+              {isLetter
+                ? "VSTEP Task 1 / General (Thư/Email)"
+                : submission.taskType === "TASK_1"
+                  ? "IELTS Academic Task 1"
+                  : "IELTS / VSTEP Task 2"}
             </Badge>
             <span className="text-slate-300">•</span>
             <span className="text-xs font-medium text-slate-600">
@@ -167,7 +175,9 @@ export default async function SubmissionPage({ params }: SubmissionPageProps) {
           </div>
           <h1 className="font-heading text-2xl font-black tracking-tight text-foreground sm:text-3xl">
             {submission.analysis
-              ? "Báo cáo phân tích bài viết"
+              ? isLetter
+                ? "Báo cáo phân tích bài viết thư"
+                : "Báo cáo phân tích bài viết"
               : submission.status === "FAILED"
                 ? "Chi tiết bài viết"
                 : submission.status === "ANALYZING"
@@ -178,7 +188,7 @@ export default async function SubmissionPage({ params }: SubmissionPageProps) {
 
         <div className="shrink-0 flex items-center gap-2.5">
           <Button asChild variant="outline" size="sm" className="rounded-xl font-bold shadow-2xs">
-            <Link href="/dashboard/new">Viết bài luận mới</Link>
+            <Link href="/dashboard/new">{isLetter ? "Viết thư mới" : "Viết bài mới"}</Link>
           </Button>
         </div>
       </div>
@@ -539,13 +549,15 @@ export default async function SubmissionPage({ params }: SubmissionPageProps) {
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
                   <Badge variant="secondary" className="mb-1 text-xs font-semibold">
-                    Bài viết mẫu B2 · Chuẩn P.E.E.R
+                    {isLetter ? "Thư mẫu B2 · Chuẩn văn phong" : "Bài viết mẫu B2 · Chuẩn P.E.E.R"}
                   </Badge>
                   <h2 className="font-heading text-2xl font-bold tracking-tight text-foreground">
-                    Bài viết mẫu được tối ưu hóa
+                    {isLetter ? "Bức thư mẫu được tối ưu hóa" : "Bài viết mẫu được tối ưu hóa"}
                   </h2>
                   <p className="text-xs text-muted-foreground">
-                    Viết lại hoàn chỉnh giữ nguyên lập trường của bạn với cách dùng từ học thuật và liên kết chặt chẽ.
+                    {isLetter
+                      ? "Viết lại bức thư hoàn chỉnh theo đúng văn phong chuẩn B2 và định dạng thư từ."
+                      : "Viết lại hoàn chỉnh giữ nguyên lập trường của bạn với cách dùng từ học thuật và liên kết chặt chẽ."}
                   </p>
                 </div>
               </div>

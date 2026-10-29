@@ -27,6 +27,15 @@ import { Textarea } from "@/components/ui/textarea";
 
 const questionTypeOptions = {
   TASK_1: [
+    // Viết thư / Email (VSTEP Task 1 & IELTS General Training)
+    { value: "Letter of Complaint", label: "Thư phàn nàn / khiếu nại (Letter of Complaint)" },
+    { value: "Letter of Request / Inquiry", label: "Thư yêu cầu / hỏi thông tin (Letter of Request / Inquiry)" },
+    { value: "Letter of Apology", label: "Thư xin lỗi (Letter of Apology)" },
+    { value: "Letter of Thanks", label: "Thư cảm ơn (Thank-you Letter)" },
+    { value: "Letter of Invitation", label: "Thư mời (Letter of Invitation)" },
+    { value: "Letter of Advice", label: "Thư khuyên bảo / đề xuất (Letter of Advice)" },
+    { value: "Letter of Application", label: "Thư ứng tuyển / xin việc (Letter of Application)" },
+    // Biểu đồ & Báo cáo (IELTS Academic Task 1)
     { value: "Line graph", label: "Biểu đồ đường (Line graph)" },
     { value: "Bar chart", label: "Biểu đồ cột (Bar chart)" },
     { value: "Pie chart", label: "Biểu đồ tròn (Pie chart)" },
@@ -81,9 +90,11 @@ export function SubmissionForm() {
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const isLetter = questionType.startsWith("Letter");
+  const minWordsRequired = isLetter ? 30 : 50;
+  const recommendedWords = isLetter ? 120 : taskType === "TASK_1" ? 150 : 250;
   const wordCount = useMemo(() => countWords(originalText), [originalText]);
-  const recommendedWords = taskType === "TASK_1" ? 150 : 250;
-  const canSubmit = wordCount >= 50;
+  const canSubmit = wordCount >= minWordsRequired;
   const wordPercent = Math.min(100, Math.round((wordCount / recommendedWords) * 100));
 
   function changeTaskType(value: TaskType) {
@@ -162,8 +173,8 @@ export function SubmissionForm() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="TASK_1">Academic Task 1 (Biểu đồ / Quy trình)</SelectItem>
-                <SelectItem value="TASK_2">IELTS Task 2 (Bài luận văn)</SelectItem>
+                <SelectItem value="TASK_1">Task 1 (Thư VSTEP / IELTS General & Academic)</SelectItem>
+                <SelectItem value="TASK_2">Task 2 (Bài luận văn - VSTEP / IELTS Essay)</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -214,10 +225,12 @@ export function SubmissionForm() {
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <Label htmlFor="prompt" className="font-heading text-lg font-bold text-foreground">
-                Đề bài IELTS (Prompt)
+                {isLetter ? "Đề bài Thư / Email (Prompt & Yêu cầu)" : "Đề bài IELTS / VSTEP (Prompt)"}
               </Label>
               <p className="mt-1 text-xs text-muted-foreground leading-relaxed">
-                Nhập đầy đủ đề bài để AI đối chiếu và chấm chính xác tiêu chí <strong>Task Response</strong> (Mức độ hoàn thành đề) và tính logic của luận điểm.
+                {isLetter
+                  ? "Dán đề bài, tình huống và 3 gợi ý (bullet points) để AI đối chiếu mức độ giải quyết đầy đủ từng ý của bức thư."
+                  : "Nhập đầy đủ đề bài để AI đối chiếu và chấm chính xác tiêu chí Task Response (Mức độ hoàn thành đề) và tính logic của luận điểm."}
               </p>
             </div>
             <span className="text-xs font-mono text-muted-foreground">
@@ -232,9 +245,11 @@ export function SubmissionForm() {
             maxLength={3000}
             onChange={(event) => setPromptText(event.target.value)}
             placeholder={
-              taskType === "TASK_1"
-                ? "The graph below shows the proportion of... Summarise the information by selecting and reporting the main features..."
-                : "Some people believe that unpaid community service should be a compulsory part of high school programmes. To what extent do you agree or disagree?"
+              isLetter
+                ? "You have received an email from your English friend, Alex. In the email, Alex asked for your advice on visiting your city next month.\nWrite an email to Alex. In your email, you should:\n• Recommend a good time to visit\n• Suggest places to stay and things to do\n• Offer to show Alex around"
+                : taskType === "TASK_1"
+                  ? "The graph below shows the proportion of... Summarise the information by selecting and reporting the main features..."
+                  : "Some people believe that unpaid community service should be a compulsory part of high school programmes. To what extent do you agree or disagree?"
             }
             rows={4}
             value={promptText}
@@ -242,7 +257,7 @@ export function SubmissionForm() {
           {!promptText.trim() && (
             <p className="mt-2 text-xs text-amber-600 flex items-center gap-1.5">
               <HugeiconsIcon icon={HelpCircleIcon} size={14} />
-              <span>Khuyến nghị Bạn nhập đề bài để bài làm được chấm 4 tiêu chí trọn vẹn nhất.</span>
+              <span>Khuyến nghị Bạn nhập đề bài để bài làm được chấm các tiêu chí trọn vẹn nhất.</span>
             </p>
           )}
         </CardContent>
@@ -256,11 +271,13 @@ export function SubmissionForm() {
               <div className="flex items-center gap-2">
                 <HugeiconsIcon icon={Edit02Icon} size={18} className="text-primary" />
                 <Label htmlFor="essay" className="font-heading text-lg font-bold text-foreground">
-                  Nội dung bài làm của Bạn
+                  {isLetter ? "Nội dung bài viết thư của Bạn" : "Nội dung bài làm của Bạn"}
                 </Label>
               </div>
               <p className="mt-1 text-xs text-muted-foreground">
-                Viết tự nhiên nhất có thể. Hệ thống sẽ lưu giữ nguyên bản bài làm này để so sánh với các bản sửa.
+                {isLetter
+                  ? "Viết đầy đủ cấu trúc thư: Lời chào, lý do viết thư, phát triển các gợi ý, lời kết và ký tên."
+                  : "Viết tự nhiên nhất có thể. Hệ thống sẽ lưu giữ nguyên bản bài làm này để so sánh với các bản sửa."}
               </p>
             </div>
 
@@ -270,7 +287,7 @@ export function SubmissionForm() {
                 variant={
                   wordCount >= recommendedWords
                     ? "success"
-                    : wordCount >= 50
+                    : wordCount >= minWordsRequired
                       ? "secondary"
                       : "outline"
                 }
@@ -298,26 +315,28 @@ export function SubmissionForm() {
             maxLength={10000}
             onChange={(event) => setOriginalText(event.target.value)}
             placeholder={
-              taskType === "TASK_1"
-                ? "The given line graph illustrates...\nOverall, it is evident that...\nIn detail, the figure for..."
-                : "It is widely argued that...\nOn the one hand, proponents claim that...\nOn the other hand, it is true that...\nIn conclusion, while there are valid arguments on both sides..."
+              isLetter
+                ? "Dear Alex,\n\nIt was great to hear from you! I am really excited to know that you are planning to visit my city next month.\n\nFirst of all, in terms of timing, the best time to visit would be...\n\nRegarding places to stay and things to do...\n\nI would be more than happy to show you around while you are here. Write back soon!\n\nWarm regards,\n[Tên của bạn]"
+                : taskType === "TASK_1"
+                  ? "The given line graph illustrates...\nOverall, it is evident that...\nIn detail, the figure for..."
+                  : "It is widely argued that...\nOn the one hand, proponents claim that...\nOn the other hand, it is true that...\nIn conclusion, while there are valid arguments on both sides..."
             }
             value={originalText}
           />
 
           {/* Feedback alerts on word count */}
-          {wordCount > 0 && wordCount < 50 && (
+          {wordCount > 0 && wordCount < minWordsRequired && (
             <div className="mt-3 flex items-center gap-2 text-xs text-rose-600 bg-rose-50 p-2.5 rounded-lg border border-rose-100">
               <HugeiconsIcon icon={AlertCircleIcon} size={16} className="shrink-0" />
-              <span>Bài viết cần có tối thiểu 50 từ để thuật toán AI có đủ ngữ cảnh đánh giá chính xác.</span>
+              <span>Bài viết cần có tối thiểu {minWordsRequired} từ để thuật toán AI có đủ ngữ cảnh đánh giá chính xác.</span>
             </div>
           )}
 
-          {wordCount >= 50 && wordCount < recommendedWords && (
+          {wordCount >= minWordsRequired && wordCount < recommendedWords && (
             <div className="mt-3 flex items-center gap-2 text-xs text-amber-700 bg-amber-50 p-2.5 rounded-lg border border-amber-100">
               <HugeiconsIcon icon={HelpCircleIcon} size={16} className="shrink-0" />
               <span>
-                Bài viết hiện có {wordCount} từ (dưới mức khuyến nghị {recommendedWords} từ). Trong kỳ thi thật, điều này có thể bị trừ điểm tiêu chí Task Response. Bạn vẫn có thể nộp bài để nhận phân tích sớm.
+                Bài viết hiện có {wordCount} từ (dưới mức khuyến nghị {recommendedWords} từ). Trong kỳ thi thật, điều này có thể bị trừ điểm tiêu chí Task Fulfilment. Bạn vẫn có thể nộp bài để nhận phân tích sớm.
               </span>
             </div>
           )}
@@ -325,7 +344,7 @@ export function SubmissionForm() {
           {wordCount >= recommendedWords && (
             <div className="mt-3 flex items-center gap-2 text-xs text-emerald-700 bg-emerald-50 p-2.5 rounded-lg border border-emerald-100">
               <HugeiconsIcon icon={CheckmarkCircle02Icon} size={16} className="shrink-0" />
-              <span>Độ dài bài viết đạt chuẩn khuyến nghị của IELTS ({wordCount} từ). Sẵn sàng gửi chấm!</span>
+              <span>Độ dài bài viết đạt chuẩn khuyến nghị ({wordCount} từ). Sẵn sàng gửi chấm!</span>
             </div>
           )}
         </CardContent>

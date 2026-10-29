@@ -23,8 +23,10 @@ import {
 } from "@/components/ui/card";
 import { getSession } from "@/server/auth/session";
 import { getDashboardOverview } from "@/server/dashboard/dashboard.service";
+import { getSprintOverview } from "@/server/sprint/sprint.service";
 
 import { DeleteSubmissionButton } from "./delete-submission-button";
+import { ActiveSprintWidget } from "./active-sprint-widget";
 
 const statusStyles = {
   DRAFT: "border-slate-200 bg-slate-100 text-slate-700",
@@ -53,9 +55,10 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
     redirect("/login");
   }
 
-  const [overview, query] = await Promise.all([
+  const [overview, query, sprintOverview] = await Promise.all([
     getDashboardOverview(session.user.id),
     searchParams,
+    getSprintOverview(session.user.id),
   ]);
 
   const justSubmitted = typeof query.submitted === "string";
@@ -78,6 +81,15 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
           </Badge>
         </div>
       ) : null}
+
+      {/* Widget Lộ trình 30 ngày nếu người học đã đăng ký */}
+      {sprintOverview.isEnrolled && (
+        <ActiveSprintWidget
+          currentDay={sprintOverview.currentDay}
+          completedDaysCount={sprintOverview.completedDaysCount}
+          streak={sprintOverview.streak}
+        />
+      )}
 
       {/* 1. Top Action Hero Banner (Sapphire Navy Theme - Điểm nhấn màu sắc sang trọng) */}
       <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-slate-900 via-sky-950 to-slate-900 p-4 sm:p-5 text-white shadow-md border border-slate-800/80">

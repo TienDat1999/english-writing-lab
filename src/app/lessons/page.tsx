@@ -11,6 +11,8 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { listPublicCollections } from "@/server/content/public-content.service";
 import { VstepTemplatePreset } from "@/app/dashboard/learning/vstep-template-preset";
+import { VstepLetterTemplatePreset } from "@/app/dashboard/learning/vstep-letter-template-preset";
+import { VstepSprintCard } from "./vstep-sprint-card";
 
 type LessonsPageProps = {
   searchParams: Promise<{
@@ -46,17 +48,42 @@ export default async function PublicLessonsPage({ searchParams }: LessonsPagePro
 
   const filterTabs = [
     { id: "ALL", label: "Tất cả các Bộ" },
+    { id: "SPRINT", label: "🔥 Lộ trình 30 Ngày" },
     { id: "COLLOCATION", label: "Collocation" },
     { id: "TOPIC_VOCABULARY", label: "Từ vựng (Vocabulary)" },
     { id: "SYNONYM", label: "Từ đồng nghĩa" },
     { id: "TEMPLATE", label: "Mẫu câu (Template)" },
   ];
 
+  const showSprintCard =
+    (selectedKind === "ALL" || selectedKind === "SPRINT") &&
+    (!searchQuery ||
+      "lộ trình 30 ngày bứt phá vstep b2".includes(searchQuery) ||
+      "sprint".includes(searchQuery) ||
+      "30 ngày".includes(searchQuery) ||
+      "lộ trình".includes(searchQuery) ||
+      "vstep".includes(searchQuery) ||
+      "speaking".includes(searchQuery) ||
+      "writing".includes(searchQuery));
+
   const showPresetCard =
     (selectedKind === "ALL" || selectedKind === "TEMPLATE") &&
     (!searchQuery ||
       "vstep writing templates: lắp ghép câu theo cấu trúc c-m-e-l".includes(searchQuery) ||
       "mẫu câu & dàn ý".includes(searchQuery) ||
+      "template".includes(searchQuery) ||
+      "luận".includes(searchQuery) ||
+      "essay".includes(searchQuery) ||
+      "vstep".includes(searchQuery));
+
+  const showLetterPresetCard =
+    (selectedKind === "ALL" || selectedKind === "TEMPLATE") &&
+    (!searchQuery ||
+      "vstep task 1: bộ mẫu câu viết thư tương tác (letter / email)".includes(searchQuery) ||
+      "viết thư".includes(searchQuery) ||
+      "thư".includes(searchQuery) ||
+      "letter".includes(searchQuery) ||
+      "email".includes(searchQuery) ||
       "template".includes(searchQuery) ||
       "vstep".includes(searchQuery));
 
@@ -129,7 +156,7 @@ export default async function PublicLessonsPage({ searchParams }: LessonsPagePro
       </div>
 
       {/* Collections Grid */}
-      {collections.length === 0 && !showPresetCard ? (
+      {collections.length === 0 && !showPresetCard && !showLetterPresetCard && !showSprintCard ? (
         <div className="rounded-2xl border border-dashed border-slate-200 bg-white p-16 text-center shadow-2xs">
           <div className="mx-auto grid size-14 place-items-center rounded-2xl bg-amber-50 text-amber-700">
             <HugeiconsIcon icon={Layers01Icon} size={28} />
@@ -148,6 +175,8 @@ export default async function PublicLessonsPage({ searchParams }: LessonsPagePro
         </div>
       ) : (
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {showSprintCard && <VstepSprintCard />}
+          {showLetterPresetCard && <VstepLetterTemplatePreset />}
           {showPresetCard && <VstepTemplatePreset />}
           {collections.map((col) => {
             const kindInfo = kindBadges[col.kind || ""] || {
