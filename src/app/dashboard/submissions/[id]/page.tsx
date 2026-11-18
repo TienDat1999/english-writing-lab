@@ -26,6 +26,7 @@ import { ResourceNotFoundError } from "@/server/http/errors";
 import { getSubmissionDetail } from "@/server/submissions/submission.service";
 
 import { CopyButton } from "./copy-button";
+import { CriteriaDrawer } from "./criteria-drawer";
 import { GrammarCorrectionsTable } from "./grammar-corrections-table";
 import { RetryAnalysisButton } from "./retry-analysis-button";
 import { RewrittenEssayViewer } from "./rewritten-essay-viewer";
@@ -33,50 +34,6 @@ import { SectionNav } from "./section-nav";
 import { StatusPoller } from "./status-poller";
 import { VocabularyUpgradesTable } from "./vocabulary-upgrades-table";
 
-const criteriaConfig = {
-  taskResponse: {
-    title: "Mức độ trả lời đề bài",
-    enTitle: "Task Response",
-    icon: Target01Icon,
-    accentClass: "border-sky-200 bg-sky-50/50 text-sky-800",
-    badgeClass: "border-sky-300 bg-sky-50 text-sky-800",
-  },
-  logicReasoning: {
-    title: "Tính logic & Lập luận",
-    enTitle: "Logic & Reasoning",
-    icon: SparklesIcon,
-    accentClass: "border-indigo-200 bg-indigo-50/50 text-indigo-800",
-    badgeClass: "border-indigo-300 bg-indigo-50 text-indigo-800",
-  },
-  realismPersuasiveness: {
-    title: "Tính thuyết phục thực tế",
-    enTitle: "Realism & Persuasiveness",
-    icon: CheckmarkCircle02Icon,
-    accentClass: "border-emerald-200 bg-emerald-50/50 text-emerald-800",
-    badgeClass: "border-emerald-300 bg-emerald-50 text-emerald-800",
-  },
-  ideaDevelopment: {
-    title: "Mở rộng & Phát triển ý",
-    enTitle: "Idea Development",
-    icon: BookOpen01Icon,
-    accentClass: "border-violet-200 bg-violet-50/50 text-violet-800",
-    badgeClass: "border-violet-300 bg-violet-50 text-violet-800",
-  },
-  vocabularyGrammar: {
-    title: "Ngữ pháp & Từ vựng",
-    enTitle: "Vocabulary & Grammar",
-    icon: Edit02Icon,
-    accentClass: "border-amber-200 bg-amber-50/50 text-amber-800",
-    badgeClass: "border-amber-300 bg-amber-50 text-amber-800",
-  },
-  nativeLikeWriting: {
-    title: "Văn phong tự nhiên",
-    enTitle: "Native-like Writing",
-    icon: TranslateIcon,
-    accentClass: "border-teal-200 bg-teal-50/50 text-teal-800",
-    badgeClass: "border-teal-300 bg-teal-50 text-teal-800",
-  },
-} as const;
 
 function getBandLevelLabel(band: number | null): string {
   if (band === null) return "Chưa có đánh giá";
@@ -346,6 +303,11 @@ export default async function SubmissionPage({ params }: SubmissionPageProps) {
                       </div>
                     </div>
                   ) : null}
+
+                  <CriteriaDrawer
+                    criteriaFeedback={submission.analysis.criteriaFeedback}
+                    variant="hero"
+                  />
                 </div>
 
                 {/* Cột Nhận xét Giám khảo & Thống kê nhanh */}
@@ -554,58 +516,41 @@ export default async function SubmissionPage({ params }: SubmissionPageProps) {
                 submissionId={submission.id}
                 rewrittenEssay={submission.analysis.rewrittenEssay}
                 rewrittenEssayVi={submission.analysis.rewrittenEssayVi}
+                originalText={submission.originalText}
+                structuralWeaknesses={submission.analysis.structuralWeaknesses}
+                grammarCorrections={submission.analysis.grammarCorrections}
+                vocabularyUpgrades={submission.analysis.vocabularyUpgrades}
+                issues={submission.analysis.issues}
               />
             </section>
           ) : null}
 
-          {/* PHẦN 6: ĐÁNH GIÁ CHI TIẾT 6 TIÊU CHÍ */}
-          <section id="criteria" className="space-y-4 pt-2">
-            <div>
-              <Badge variant="outline" className="mb-1 text-xs font-semibold">
-                Tiêu chuẩn chấm chi tiết
-              </Badge>
-              <h2 className="font-heading text-2xl font-bold tracking-tight text-foreground">
-                Đánh giá theo 6 khía cạnh chuyên sâu
-              </h2>
-              <p className="text-xs text-muted-foreground">
-                Phân tích toàn diện mức độ hoàn thiện của bài luận theo tiêu chí khảo thí.
-              </p>
-            </div>
+          {/* PHẦN 6: TIÊU CHUẨN CHẤM CHI TIẾT (COMPACT CALLOUT) */}
+          <section id="criteria" className="pt-2">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-2xl border border-slate-200/90 bg-gradient-to-r from-sky-50/50 via-white to-indigo-50/30 p-5 shadow-xs">
+              <div className="flex items-start sm:items-center gap-3.5">
+                <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-sky-100 text-sky-700">
+                  <HugeiconsIcon icon={SparklesIcon} size={20} />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2 mb-0.5">
+                    <Badge variant="outline" className="text-[10px] font-semibold border-sky-300 bg-sky-50 text-sky-800">
+                      Tiêu chuẩn chấm chi tiết
+                    </Badge>
+                    <h3 className="font-heading text-sm font-bold text-slate-900">
+                      Đánh giá theo 6 khía cạnh chuyên sâu
+                    </h3>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Phân tích toàn diện mức độ hoàn thiện của bài luận theo tiêu chí khảo thí (Task Response, Logic, Từ vựng, Ngữ pháp, Lập luận, Văn phong).
+                  </p>
+                </div>
+              </div>
 
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {Object.entries(criteriaConfig).map(([key, config]) => {
-                const feedbackText =
-                  submission.analysis?.criteriaFeedback[
-                    key as keyof typeof criteriaConfig
-                  ] || "Đang cập nhật đánh giá.";
-                const IconComponent = config.icon;
-
-                return (
-                  <Card
-                    key={key}
-                    className="flex flex-col justify-between rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-all hover:border-slate-300 hover:shadow-md"
-                  >
-                    <div>
-                      <div className="flex items-center justify-between gap-2 mb-3">
-                        <div className="flex size-8 items-center justify-center rounded-lg bg-slate-100 text-slate-700">
-                          <HugeiconsIcon icon={IconComponent} size={18} />
-                        </div>
-                        <Badge variant="outline" className={`text-[10px] font-semibold ${config.badgeClass}`}>
-                          {config.enTitle}
-                        </Badge>
-                      </div>
-
-                      <h3 className="font-heading text-sm font-bold text-slate-900 mb-2">
-                        {config.title}
-                      </h3>
-
-                      <p className="text-xs leading-relaxed text-slate-600 font-normal">
-                        {feedbackText}
-                      </p>
-                    </div>
-                  </Card>
-                );
-              })}
+              <CriteriaDrawer
+                criteriaFeedback={submission.analysis.criteriaFeedback}
+                variant="compact"
+              />
             </div>
           </section>
 
